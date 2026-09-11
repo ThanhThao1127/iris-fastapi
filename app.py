@@ -35,7 +35,7 @@ species = {
 
 @app.get("/")
 def home():
-    return {"message": "Iris SVM API is running"}
+    return {"api.html"}
 
 
 @app.get("/health")
