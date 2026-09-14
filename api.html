@@ -1,30 +1,944 @@
 <!DOCTYPE html>
-<html lang="en">
+
+<html lang="vi">
+
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Iris Flower Prediction</title>
+
+<style>
+
+    /* =========================
+       CÀI ĐẶT CHUNG
+       ========================= */
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+
+        background: linear-gradient(
+            135deg,
+            #e8f5e9,
+            #e3f2fd
+        );
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+
+    /* =========================
+       KHUNG CHÍNH
+       ========================= */
+
+    .card-wrapper {
+        position: relative;
+        width: 90%;
+        max-width: 900px;
+    }
+
+    .container {
+        width: 100%;
+
+        background: white;
+
+        padding: 40px;
+
+        border-radius: 20px;
+
+        box-shadow:
+            0 10px 30px rgba(0, 0, 0, 0.12);
+
+        position: relative;
+        z-index: 2;
+    }
+
+
+    /* =========================
+       HOA VÀ LÁ TRANG TRÍ
+       ========================= */
+
+    .decorations {
+        position: absolute;
+
+        inset: -85px;
+
+        pointer-events: none;
+
+        z-index: 1;
+    }
+
+    .decor {
+        position: absolute;
+
+        user-select: none;
+    }
+
+
+    /* Hoa */
+
+    .flower-1  { top: 5%;  left: 1%;  font-size: 42px; transform: rotate(-20deg); }
+    .flower-2  { top: -8%; left: 22%; font-size: 32px; transform: rotate(15deg); }
+    .flower-3  { top: 2%;  right: 8%; font-size: 40px; transform: rotate(20deg); }
+    .flower-4  { top: 30%; right: -3%; font-size: 32px; transform: rotate(-15deg); }
+    .flower-5  { bottom: 18%; right: 0%; font-size: 42px; transform: rotate(18deg); }
+    .flower-6  { bottom: -6%; right: 25%; font-size: 34px; transform: rotate(-20deg); }
+    .flower-7  { bottom: -4%; left: 12%; font-size: 40px; transform: rotate(15deg); }
+    .flower-8  { bottom: 25%; left: -3%; font-size: 32px; transform: rotate(-25deg); }
+
+    .flower-9  { top: 15%; left: 15%; font-size: 28px; transform: rotate(-10deg); }
+    .flower-10 { top: 45%; left: -8%; font-size: 36px; transform: rotate(25deg); }
+    .flower-11 { top: 65%; left: 8%; font-size: 30px; transform: rotate(-18deg); }
+    .flower-12 { top: 80%; left: 28%; font-size: 38px; transform: rotate(12deg); }
+    .flower-13 { top: 12%; right: 25%; font-size: 27px; transform: rotate(-20deg); }
+    .flower-14 { top: 55%; right: -7%; font-size: 38px; transform: rotate(15deg); }
+    .flower-15 { top: 72%; right: 12%; font-size: 30px; transform: rotate(-12deg); }
+    .flower-16 { bottom: 35%; right: 28%; font-size: 35px; transform: rotate(20deg); }
+    .flower-17 { top: 35%; left: 4%; font-size: 26px; transform: rotate(-25deg); }
+    .flower-18 { top: 38%; right: 5%; font-size: 29px; transform: rotate(18deg); }
+
+
+    /* Lá */
+
+    .leaf-1  { top: 18%; left: -4%; font-size: 30px; transform: rotate(-30deg); }
+    .leaf-2  { top: -5%; right: 28%; font-size: 28px; transform: rotate(25deg); }
+    .leaf-3  { bottom: 5%; right: -4%; font-size: 32px; transform: rotate(-15deg); }
+    .leaf-4  { bottom: 8%; left: 2%; font-size: 30px; transform: rotate(20deg); }
+
+    .leaf-5  { top: 8%; left: 30%; font-size: 25px; transform: rotate(-15deg); }
+    .leaf-6  { top: 25%; left: -7%; font-size: 27px; transform: rotate(35deg); }
+    .leaf-7  { top: 40%; left: 15%; font-size: 24px; transform: rotate(-20deg); }
+    .leaf-8  { top: 60%; left: -6%; font-size: 29px; transform: rotate(25deg); }
+    .leaf-9  { bottom: 15%; left: 25%; font-size: 26px; transform: rotate(-30deg); }
+    .leaf-10 { top: 10%; right: 12%; font-size: 24px; transform: rotate(30deg); }
+    .leaf-11 { top: 35%; right: -6%; font-size: 28px; transform: rotate(-25deg); }
+    .leaf-12 { top: 50%; right: 18%; font-size: 25px; transform: rotate(20deg); }
+    .leaf-13 { bottom: 30%; right: -5%; font-size: 30px; transform: rotate(-35deg); }
+    .leaf-14 { bottom: 5%; left: 40%; font-size: 27px; transform: rotate(15deg); }
+
+
+    /* =========================
+       HEADER
+       ========================= */
+
+    .header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .flower {
+        font-size: 50px;
+        margin-bottom: 10px;
+    }
+
+    h1 {
+        margin: 0;
+
+        color: #2e5d50;
+
+        font-size: 32px;
+    }
+
+    .description {
+        color: #666;
+
+        margin-top: 10px;
+
+        font-size: 15px;
+    }
+
+
+    /* =========================
+       FORM
+       ========================= */
+
+    .form {
+        display: grid;
+
+        grid-template-columns: 1fr 1fr;
+
+        gap: 20px;
+    }
+
+    .input-group {
+        display: flex;
+
+        flex-direction: column;
+    }
+
+    label {
+        font-weight: bold;
+
+        color: #444;
+
+        margin-bottom: 8px;
+    }
+
+    input {
+        width: 100%;
+
+        padding: 13px;
+
+        border: 2px solid #ddd;
+
+        border-radius: 10px;
+
+        font-size: 16px;
+
+        outline: none;
+
+        transition: 0.3s;
+    }
+
+    input:focus {
+        border-color: #5b9b8a;
+
+        box-shadow:
+            0 0 5px rgba(91, 155, 138, 0.3);
+    }
+
+    .unit {
+        font-size: 12px;
+
+        color: #888;
+
+        margin-top: 5px;
+    }
+
+
+    /* =========================
+       NÚT DỰ ĐOÁN
+       ========================= */
+
+    button {
+        width: 100%;
+
+        margin-top: 25px;
+
+        padding: 14px;
+
+        border: none;
+
+        border-radius: 10px;
+
+        background: #4f8f7b;
+
+        color: white;
+
+        font-size: 17px;
+
+        font-weight: bold;
+
+        cursor: pointer;
+
+        transition: 0.3s;
+    }
+
+    button:hover {
+        background: #3d7564;
+
+        transform: translateY(-2px);
+    }
+
+    button:disabled {
+        background: #9bbdb3;
+
+        cursor: not-allowed;
+
+        transform: none;
+    }
+
+
+    /* =========================
+       KẾT QUẢ
+       ========================= */
+
+    #result {
+        display: none;
+
+        margin-top: 25px;
+
+        padding: 18px;
+
+        border-radius: 12px;
+
+        background: #f1f8f5;
+
+        text-align: center;
+    }
+
+    .result-title {
+        color: #666;
+
+        font-size: 14px;
+
+        margin-bottom: 5px;
+    }
+
+    .result-value {
+        color: #2e5d50;
+
+        font-size: 24px;
+
+        font-weight: bold;
+    }
+
+
+    /* =========================
+       ẢNH + THÔNG TIN
+       ========================= */
+
+    .result-content {
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        gap: 25px;
+
+        margin-top: 20px;
+    }
+
+    .image-box {
+        flex: 1;
+
+        text-align: center;
+    }
+
+    #flower-image {
+        display: none;
+
+        width: 300px;
+
+        max-width: 100%;
+
+        border-radius: 15px;
+
+        box-shadow:
+            0 5px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .info-box {
+        flex: 1;
+
+        background: white;
+
+        padding: 20px;
+
+        border-radius: 15px;
+
+        text-align: left;
+
+        box-shadow:
+            0 3px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .info-box h3 {
+        margin-top: 0;
+
+        color: #2e5d50;
+
+        text-align: center;
+    }
+
+    .info-box ul {
+        padding-left: 20px;
+
+        margin-bottom: 0;
+    }
+
+    .info-box li {
+        margin-bottom: 10px;
+
+        line-height: 1.5;
+
+        color: #555;
+    }
+
+
+    /* =========================
+       FOOTER
+       ========================= */
+
+    .footer {
+        text-align: center;
+
+        margin-top: 25px;
+
+        color: #999;
+
+        font-size: 12px;
+    }
+
+
+    /* =========================
+       ĐIỆN THOẠI
+       ========================= */
+
+    @media (max-width: 600px) {
+
+        .decorations {
+            display: none;
+        }
+
+        .container {
+            padding: 25px;
+        }
+
+        .form {
+            grid-template-columns: 1fr;
+        }
+
+        h1 {
+            font-size: 26px;
+        }
+
+        .result-content {
+            flex-direction: column;
+        }
+
+        .info-box {
+            width: 100%;
+        }
+
+    }
+
+</style>
+
 </head>
+
 <body>
 
-<h2>Test Iris API</h2>
+<!-- =========================
+     KHUNG CHÍNH
+     ========================= -->
+
+<div class="card-wrapper">
+
+
+    <!-- =========================
+         HOA VÀ LÁ TRANG TRÍ
+         ========================= -->
+
+    <div class="decorations">
+
+        <span class="decor flower-1">🌸</span>
+        <span class="decor flower-2">🪻</span>
+        <span class="decor flower-3">🌷</span>
+        <span class="decor flower-4">🌸</span>
+        <span class="decor flower-5">🌺</span>
+        <span class="decor flower-6">🪻</span>
+        <span class="decor flower-7">🌷</span>
+        <span class="decor flower-8">🌸</span>
+
+        <span class="decor flower-9">🌼</span>
+        <span class="decor flower-10">🌷</span>
+        <span class="decor flower-11">🌸</span>
+        <span class="decor flower-12">🌺</span>
+        <span class="decor flower-13">🪻</span>
+        <span class="decor flower-14">🌹</span>
+        <span class="decor flower-15">🌼</span>
+        <span class="decor flower-16">🌷</span>
+        <span class="decor flower-17">🌸</span>
+        <span class="decor flower-18">🌺</span>
+
+        <span class="decor leaf-1">🌿</span>
+        <span class="decor leaf-2">🍃</span>
+        <span class="decor leaf-3">🌿</span>
+        <span class="decor leaf-4">🍃</span>
+
+        <span class="decor leaf-5">🌿</span>
+        <span class="decor leaf-6">🍃</span>
+        <span class="decor leaf-7">🌿</span>
+        <span class="decor leaf-8">🍃</span>
+        <span class="decor leaf-9">🌿</span>
+        <span class="decor leaf-10">🍃</span>
+        <span class="decor leaf-11">🌿</span>
+        <span class="decor leaf-12">🍃</span>
+        <span class="decor leaf-13">🌿</span>
+        <span class="decor leaf-14">🍃</span>
+
+    </div>
+
+
+    <!-- =========================
+         BẢNG CHÍNH
+         ========================= -->
+
+    <div class="container">
+
+
+        <!-- HEADER -->
+
+        <div class="header">
+
+            <div class="flower">🌸</div>
+
+            <h1>Iris Flower Prediction</h1>
+
+            <p class="description">
+                Nhập 4 thông số của hoa để dự đoán loài Iris bằng mô hình SVM
+            </p>
+
+        </div>
+
+
+        <!-- =========================
+             FORM NHẬP DỮ LIỆU
+             ========================= -->
+
+        <div class="form">
+
+
+            <div class="input-group">
+
+                <label for="sepal_length">
+                    Sepal Length
+                </label>
+
+                <input
+                    type="number"
+                    step="any"
+                    id="sepal_length"
+                    placeholder="Ví dụ: 5.1"
+                >
+
+                <span class="unit">
+                    Chiều dài đài hoa
+                </span>
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label for="sepal_width">
+                    Sepal Width
+                </label>
+
+                <input
+                    type="number"
+                    step="any"
+                    id="sepal_width"
+                    placeholder="Ví dụ: 3.5"
+                >
+
+                <span class="unit">
+                    Chiều rộng đài hoa
+                </span>
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label for="petal_length">
+                    Petal Length
+                </label>
+
+                <input
+                    type="number"
+                    step="any"
+                    id="petal_length"
+                    placeholder="Ví dụ: 1.4"
+                >
+
+                <span class="unit">
+                    Chiều dài cánh hoa
+                </span>
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label for="petal_width">
+                    Petal Width
+                </label>
+
+                <input
+                    type="number"
+                    step="any"
+                    id="petal_width"
+                    placeholder="Ví dụ: 0.2"
+                >
+
+                <span class="unit">
+                    Chiều rộng cánh hoa
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             NÚT DỰ ĐOÁN
+             ========================= -->
+
+        <button id="predict-button" onclick="predict()">
+            🔍 Dự đoán loài hoa
+        </button>
+
+
+        <!-- =========================
+             KẾT QUẢ
+             ========================= -->
+
+        <div id="result">
+
+            <div class="result-title">
+                Kết quả dự đoán
+            </div>
+
+            <div
+                class="result-value"
+                id="prediction"
+            ></div>
+
+
+            <div class="result-content">
+
+
+                <!-- ẢNH -->
+
+                <div class="image-box">
+
+                    <img
+                        id="flower-image"
+                        src=""
+                        alt="Hoa Iris"
+                    >
+
+                </div>
+
+
+                <!-- THÔNG TIN -->
+
+                <div class="info-box">
+
+                    <h3>
+                        🌸 Đặc điểm loài hoa
+                    </h3>
+
+                    <div id="flower-info"></div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- FOOTER -->
+
+        <div class="footer">
+            Iris SVM Prediction • FastAPI
+        </div>
+
+
+    </div>
+
+</div>
+
 
 <script>
-fetch("https://iris-svm-api.onrender.com/predict", {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-        sepal_length: 5.1,
-        sepal_width: 3.5,
-        petal_length: 1.4,
-        petal_width: 0.2
-    })
-})
-.then(response => response.json())
-.then(data => console.log(data))
-.catch(error => console.error(error));
+
+
+    /* =====================================================
+       THÔNG TIN CỦA 3 LOÀI HOA
+       ===================================================== */
+
+    const flowerData = {
+
+        Setosa: {
+
+            image: "/images/Setosa.jpg",
+
+            info: `
+                <ul>
+
+                    <li>
+                        <b>Kích thước:</b>
+                        Nhỏ nhất trong ba loài.
+                    </li>
+
+                    <li>
+                        <b>Cánh hoa:</b>
+                        Rất ngắn và hẹp, dễ dàng phân biệt
+                        với hai loài còn lại.
+                    </li>
+
+                    <li>
+                        <b>Đài hoa:</b>
+                        Chiều dài và chiều rộng tập trung
+                        ở mức thấp nhất.
+                    </li>
+
+                </ul>
+            `
+
+        },
+
+
+        Versicolor: {
+
+            image: "/images/Versicolor.jpg",
+
+            info: `
+                <ul>
+
+                    <li>
+                        <b>Kích thước:</b>
+                        Trung bình, nằm ở khoảng giữa.
+                    </li>
+
+                    <li>
+                        <b>Cánh hoa:</b>
+                        Lớn hơn Iris Setosa nhưng nhỏ hơn
+                        Iris Virginica.
+                    </li>
+
+                    <li>
+                        <b>Đài hoa:</b>
+                        Các thông số có xu hướng ở mức
+                        trung gian.
+                    </li>
+
+                </ul>
+            `
+
+        },
+
+
+        Virginica: {
+
+            image: "/images/Virginica.jpg",
+
+            info: `
+                <ul>
+
+                    <li>
+                        <b>Kích thước:</b>
+                        Lớn nhất trong ba loài.
+                    </li>
+
+                    <li>
+                        <b>Cánh hoa:</b>
+                        Dài và rộng nhất, đôi khi có sự
+                        chồng lấn nhẹ với Iris Versicolor.
+                    </li>
+
+                    <li>
+                        <b>Đài hoa:</b>
+                        Chiều dài và chiều rộng phân bố
+                        ở mức cao nhất.
+                    </li>
+
+                </ul>
+            `
+
+        }
+
+    };
+
+
+    /* =====================================================
+       HÀM DỰ ĐOÁN
+       ===================================================== */
+
+    async function predict() {
+
+
+        /* Lấy dữ liệu */
+
+        const sepal_length =
+            document.getElementById("sepal_length").value;
+
+        const sepal_width =
+            document.getElementById("sepal_width").value;
+
+        const petal_length =
+            document.getElementById("petal_length").value;
+
+        const petal_width =
+            document.getElementById("petal_width").value;
+
+
+        /* Kiểm tra dữ liệu */
+
+        if (
+            !sepal_length ||
+            !sepal_width ||
+            !petal_length ||
+            !petal_width
+        ) {
+
+            alert("Vui lòng nhập đầy đủ 4 thông số!");
+
+            return;
+
+        }
+
+
+        /* Lấy các phần tử cần sử dụng */
+
+        const button =
+            document.getElementById("predict-button");
+
+        const result =
+            document.getElementById("result");
+
+        const prediction =
+            document.getElementById("prediction");
+
+        const flowerImage =
+            document.getElementById("flower-image");
+
+        const flowerInfo =
+            document.getElementById("flower-info");
+
+
+        /* Khóa nút trong lúc dự đoán */
+
+        button.disabled = true;
+
+        button.innerText = "⏳ Đang dự đoán...";
+
+
+        try {
+
+
+            /* Gửi dữ liệu đến FastAPI */
+
+            const response = await fetch("/predict", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    sepal_length: Number(sepal_length),
+
+                    sepal_width: Number(sepal_width),
+
+                    petal_length: Number(petal_length),
+
+                    petal_width: Number(petal_width)
+
+                })
+
+            });
+
+
+            /* Kiểm tra API */
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "API không phản hồi thành công"
+                );
+
+            }
+
+
+            /* Lấy kết quả */
+
+            const data =
+                await response.json();
+
+
+            const flower =
+                flowerData[data.prediction];
+
+
+            /* Hiển thị khung kết quả */
+
+            result.style.display = "block";
+
+
+            /* Hiển thị tên loài */
+
+            prediction.innerText =
+                data.prediction;
+
+
+            /* Kiểm tra thông tin loài */
+
+            if (flower) {
+
+                flowerImage.src =
+                    flower.image;
+
+                flowerInfo.innerHTML =
+                    flower.info;
+
+                flowerImage.style.display =
+                    "block";
+
+            }
+
+
+        }
+
+
+        catch (error) {
+
+
+            console.error(error);
+
+
+            result.style.display =
+                "block";
+
+
+            prediction.innerText =
+                "Có lỗi xảy ra!";
+
+
+            flowerImage.style.display =
+                "none";
+
+
+            flowerInfo.innerHTML = `
+                <p style="color: #c0392b; text-align: center;">
+                    Không thể kết nối với hệ thống dự đoán.
+                    Vui lòng thử lại.
+                </p>
+            `;
+
+
+        }
+
+
+        finally {
+
+
+            /* Mở lại nút */
+
+            button.disabled = false;
+
+            button.innerText =
+                "🔍 Dự đoán loài hoa";
+
+        }
+
+    }
+
 </script>
 
 </body>
+
 </html>

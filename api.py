@@ -1,6 +1,6 @@
 import requests
 
-url = "https://iris-svm-api.onrender.com/predict"
+url = "https://iris-fastapi-5myq.onrender.com/predict"
 
 data = {
     "sepal_length": 5.1,

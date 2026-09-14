@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
@@ -10,6 +12,7 @@ app = FastAPI(
     description="SVM model for the Iris dataset",
     version="1.0.0",
 )
+app.mount("/images", StaticFiles(directory="images"), name="images")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,15 +30,15 @@ class IrisInput(BaseModel):
 
 
 species = {
-    0: "setosa",
-    1: "versicolor",
-    2: "virginica",
+    0: "Setosa",
+    1: "Versicolor",
+    2: "Virginica",
 }
 
 
 @app.get("/")
 def home():
-    return {"message": "Iris SVM API is running"}
+    return FileResponse("api.html")
 
 
 @app.get("/health")
@@ -55,6 +58,5 @@ def predict(data: IrisInput):
     prediction = int(model.predict(features)[0])
 
     return {
-        "class_id": prediction,
-        "prediction": species[prediction],
+        "prediction": species[prediction]
     }
