@@ -5,14 +5,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
 
+# Tải mô hình và bộ chuẩn hóa
 model = joblib.load("svm_model.pkl")
+scaler = joblib.load("scaler.pkl")
 
 app = FastAPI(
     title="Iris Classification API",
     description="SVM model for the Iris dataset",
     version="1.0.0",
 )
+
 app.mount("/images", StaticFiles(directory="images"), name="images")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -48,6 +52,7 @@ def health():
 
 @app.post("/predict")
 def predict(data: IrisInput):
+
     features = [[
         data.sepal_length,
         data.sepal_width,
@@ -55,7 +60,11 @@ def predict(data: IrisInput):
         data.petal_width,
     ]]
 
-    prediction = int(model.predict(features)[0])
+    # Chuẩn hóa dữ liệu đầu vào
+    features_scaled = scaler.transform(features)
+
+    # Dự đoán loài hoa
+    prediction = int(model.predict(features_scaled)[0])
 
     return {
         "prediction": species[prediction]
