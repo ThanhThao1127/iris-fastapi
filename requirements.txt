@@ -3,3 +3,4 @@ uvicorn[standard]
 scikit-learn
 joblib
 pydantic
+matplotlibgit add api.html requirements.txt train.py confusion_matrix.png iris_visualization.png svm_decision_boundary.png

@@ -1,1125 +1,2994 @@
 <!DOCTYPE html>
+
 <html lang="vi">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
     <title>Iris Flower Prediction</title>
 
+
     <style>
+
+        /* =========================
+           CÀI ĐẶT CHUNG
+           ========================= */
+
         * {
             box-sizing: border-box;
         }
 
         body {
+
             margin: 0;
+
             min-height: 100vh;
+
             font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #e8f5e9, #e3f2fd);
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #e8f5e9,
+                    #e3f2fd
+                );
+
             display: flex;
+
             justify-content: center;
+
             align-items: center;
+
         }
 
+
         /* =========================
-           TRANG INTRO
+           TRANG 1 - INTRO
            ========================= */
 
         #intro-screen {
+
             position: fixed;
+
             inset: 0;
+
             z-index: 9999;
+
             display: flex;
+
             justify-content: center;
+
             align-items: center;
+
             overflow: hidden;
-            background: linear-gradient(135deg, #dff5e8, #dcecff, #f3e1ff);
-            transition: opacity 0.8s ease, visibility 0.8s ease;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #dff5e8,
+                    #dcecff,
+                    #f3e1ff
+                );
+
+            transition:
+                opacity 0.8s ease,
+                visibility 0.8s ease;
+
         }
+
 
         #intro-screen.hide {
+
             opacity: 0;
+
             visibility: hidden;
+
             pointer-events: none;
+
         }
+
 
         .intro-content {
+
             text-align: center;
+
             padding: 30px;
-            animation: introAppear 1.4s ease;
+
+            animation:
+                introAppear 1.4s ease;
+
         }
+
 
         .intro-flower {
+
             font-size: 90px;
-            animation: flowerFloat 3s ease-in-out infinite;
-            filter: drop-shadow(0 8px 12px rgba(80, 80, 120, 0.18));
+
+            animation:
+                flowerFloat 3s ease-in-out infinite;
+
+            filter:
+                drop-shadow(
+                    0 8px 12px
+                    rgba(80, 80, 120, 0.18)
+                );
+
         }
+
 
         .intro-title {
-            margin: 18px 0 10px;
+
+            margin:
+                18px 0 10px;
+
             color: #2e5d50;
-            font-size: clamp(38px, 8vw, 76px);
+
+            font-size:
+                clamp(38px, 8vw, 76px);
+
             letter-spacing: 8px;
+
             font-weight: bold;
-            animation: titleSlide 1.2s ease;
+
+            animation:
+                titleSlide 1.2s ease;
+
         }
+
 
         .intro-subtitle {
+
             color: #526b67;
+
             font-size: 19px;
+
             margin-bottom: 12px;
+
         }
+
 
         .intro-description {
+
             color: #687b78;
+
             max-width: 520px;
+
             line-height: 1.7;
-            margin: 0 auto 28px;
+
+            margin:
+                0 auto 28px;
+
         }
+
 
         .intro-button {
+
             width: auto;
+
             margin-top: 10px;
-            padding: 15px 32px;
+
+            padding:
+                15px 32px;
+
             border: none;
+
             border-radius: 30px;
+
             background: #4f8f7b;
+
             color: white;
+
             font-size: 17px;
+
             font-weight: bold;
+
             cursor: pointer;
-            box-shadow: 0 8px 20px rgba(79, 143, 123, 0.3);
+
+            box-shadow:
+                0 8px 20px
+                rgba(79, 143, 123, 0.3);
+
             transition: 0.3s;
+
         }
+
 
         .intro-button:hover {
+
             background: #3d7564;
-            transform: translateY(-3px) scale(1.03);
+
+            transform:
+                translateY(-3px)
+                scale(1.03);
+
         }
 
-        .intro-particle {
-            position: absolute;
-            font-size: 28px;
-            opacity: 0.65;
-            animation: particleMove 7s ease-in-out infinite;
-        }
-
-        .particle-1 {
-            top: 12%;
-            left: 12%;
-        }
-
-        .particle-2 {
-            top: 20%;
-            right: 15%;
-            animation-delay: 1s;
-        }
-
-        .particle-3 {
-            bottom: 15%;
-            left: 18%;
-            animation-delay: 2s;
-        }
-
-        .particle-4 {
-            bottom: 20%;
-            right: 12%;
-            animation-delay: 3s;
-        }
-
-        .particle-5 {
-            top: 45%;
-            left: 5%;
-            animation-delay: 1.5s;
-        }
-
-        .particle-6 {
-            top: 55%;
-            right: 6%;
-            animation-delay: 2.5s;
-        }
 
         /* =========================
-           NÚT NHỎ GÓC TRÁI
+           HIỆU ỨNG TRANG INTRO
            ========================= */
 
-        .back-intro-button {
-            display: none;
-            position: fixed;
-            top: 18px;
-            left: 18px;
-            z-index: 10000;
-            width: auto;
-            margin: 0;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 20px;
-            background: rgba(79, 143, 123, 0.9);
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
+        .intro-particle {
+
+            position: absolute;
+
+            font-size: 28px;
+
+            opacity: 0.65;
+
+            animation:
+                particleMove
+                7s
+                ease-in-out
+                infinite;
+
         }
 
-        .back-intro-button:hover {
-            background: #3d7564;
-            transform: translateY(-2px);
+
+        .particle-1 {
+
+            top: 12%;
+
+            left: 12%;
+
         }
+
+
+        .particle-2 {
+
+            top: 20%;
+
+            right: 15%;
+
+            animation-delay: 1s;
+
+        }
+
+
+        .particle-3 {
+
+            bottom: 15%;
+
+            left: 18%;
+
+            animation-delay: 2s;
+
+        }
+
+
+        .particle-4 {
+
+            bottom: 20%;
+
+            right: 12%;
+
+            animation-delay: 3s;
+
+        }
+
+
+        .particle-5 {
+
+            top: 45%;
+
+            left: 5%;
+
+            animation-delay: 1.5s;
+
+        }
+
+
+        .particle-6 {
+
+            top: 55%;
+
+            right: 6%;
+
+            animation-delay: 2.5s;
+
+        }
+
 
         /* =========================
            KHUNG CHÍNH
            ========================= */
 
         .card-wrapper {
+
             display: none;
+
             position: relative;
+
             width: 90%;
+
             max-width: 900px;
-            margin: 40px auto;
+
+            margin:
+                40px auto;
+
         }
 
+
         .container {
+
             width: 100%;
+
             background: white;
+
             padding: 40px;
+
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+
+            box-shadow:
+                0 10px 30px
+                rgba(0, 0, 0, 0.12);
+
             position: relative;
+
             z-index: 2;
+
         }
+
+
+        /* =========================
+           CÁC TRANG
+           ========================= */
+
+        .page {
+
+            display: none;
+
+        }
+
+
+        .page.active {
+
+            display: block;
+
+            animation:
+                pageAppear
+                0.6s
+                ease;
+
+        }
+
 
         /* =========================
            HOA VÀ LÁ TRANG TRÍ
            ========================= */
 
         .decorations {
+
             position: absolute;
+
             inset: -85px;
+
             pointer-events: none;
+
             z-index: 1;
+
         }
+
 
         .decor {
+
             position: absolute;
+
             user-select: none;
+
         }
 
+
         .flower-1 {
+
             top: 5%;
             left: 1%;
             font-size: 42px;
             transform: rotate(-20deg);
+
         }
 
+
         .flower-2 {
+
             top: -8%;
             left: 22%;
             font-size: 32px;
             transform: rotate(15deg);
+
         }
 
+
         .flower-3 {
+
             top: 2%;
             right: 8%;
             font-size: 40px;
             transform: rotate(20deg);
+
         }
 
+
         .flower-4 {
+
             top: 30%;
             right: -3%;
             font-size: 32px;
             transform: rotate(-15deg);
+
         }
 
+
         .flower-5 {
+
             bottom: 18%;
             right: 0%;
             font-size: 42px;
             transform: rotate(18deg);
+
         }
 
+
         .flower-6 {
+
             bottom: -6%;
             right: 25%;
             font-size: 34px;
             transform: rotate(-20deg);
+
         }
 
+
         .flower-7 {
+
             bottom: -4%;
             left: 12%;
             font-size: 40px;
             transform: rotate(15deg);
+
         }
 
+
         .flower-8 {
+
             bottom: 25%;
             left: -3%;
             font-size: 32px;
             transform: rotate(-25deg);
+
         }
 
+
         .flower-9 {
+
             top: 15%;
             left: 15%;
             font-size: 28px;
+
         }
 
+
         .flower-10 {
+
             top: 45%;
             left: -8%;
             font-size: 36px;
+
         }
 
+
         .flower-11 {
+
             top: 65%;
             left: 8%;
             font-size: 30px;
+
         }
 
+
         .flower-12 {
+
             top: 80%;
             left: 28%;
             font-size: 38px;
+
         }
 
+
         .flower-13 {
+
             top: 12%;
             right: 25%;
             font-size: 27px;
+
         }
 
+
         .flower-14 {
+
             top: 55%;
             right: -7%;
             font-size: 38px;
+
         }
 
+
         .flower-15 {
+
             top: 72%;
             right: 12%;
             font-size: 30px;
+
         }
 
+
         .flower-16 {
+
             bottom: 35%;
             right: 28%;
             font-size: 35px;
+
         }
 
+
         .flower-17 {
+
             top: 35%;
             left: 4%;
             font-size: 26px;
+
         }
 
+
         .flower-18 {
+
             top: 38%;
             right: 5%;
             font-size: 29px;
+
         }
 
+
         .leaf-1 {
+
             top: 18%;
             left: -4%;
             font-size: 30px;
+
         }
 
+
         .leaf-2 {
+
             top: -5%;
             right: 28%;
             font-size: 28px;
+
         }
 
+
         .leaf-3 {
+
             bottom: 5%;
             right: -4%;
             font-size: 32px;
+
         }
 
+
         .leaf-4 {
+
             bottom: 8%;
             left: 2%;
             font-size: 30px;
+
         }
 
+
         .leaf-5 {
+
             top: 8%;
             left: 30%;
             font-size: 25px;
+
         }
 
+
         .leaf-6 {
+
             top: 25%;
             left: -7%;
             font-size: 27px;
+
         }
 
+
         .leaf-7 {
+
             top: 40%;
             left: 15%;
             font-size: 24px;
+
         }
 
+
         .leaf-8 {
+
             top: 60%;
             left: -6%;
             font-size: 29px;
+
         }
 
+
         .leaf-9 {
+
             bottom: 15%;
             left: 25%;
             font-size: 26px;
+
         }
 
+
         .leaf-10 {
+
             top: 10%;
             right: 12%;
             font-size: 24px;
+
         }
 
+
         .leaf-11 {
+
             top: 35%;
             right: -6%;
             font-size: 28px;
+
         }
 
+
         .leaf-12 {
+
             top: 50%;
             right: 18%;
             font-size: 25px;
+
         }
 
+
         .leaf-13 {
+
             bottom: 30%;
             right: -5%;
             font-size: 30px;
+
         }
 
+
         .leaf-14 {
+
             bottom: 5%;
             left: 40%;
             font-size: 27px;
+
         }
 
+
         /* =========================
-           HEADER
+           TRANG 2 - IRIS PROFILE
+           ========================= */
+
+        .profile-header {
+
+            text-align: center;
+
+            margin-bottom: 28px;
+
+        }
+
+
+        .profile-icon {
+
+            font-size: 58px;
+
+            margin-bottom: 8px;
+
+        }
+
+
+        .profile-header h2 {
+
+            margin: 0;
+
+            color: #2e5d50;
+
+            font-size: 32px;
+
+            letter-spacing: 2px;
+
+        }
+
+
+        .profile-subtitle {
+
+            color: #687b78;
+
+            font-style: italic;
+
+            margin-top: 8px;
+
+        }
+
+
+        .profile-intro {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #f1f9f5,
+                    #f3f7fd
+                );
+
+            padding: 22px;
+
+            border-radius: 15px;
+
+            line-height: 1.7;
+
+            color: #555;
+
+            margin-bottom: 25px;
+
+        }
+
+
+        .profile-section-title {
+
+            text-align: center;
+
+            color: #2e5d50;
+
+            font-size: 20px;
+
+            margin:
+                25px 0 15px;
+
+        }
+
+
+        /* =========================
+           BẢNG ĐẶC ĐIỂM
+           ========================= */
+
+        .feature-table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            overflow: hidden;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 3px 12px
+                rgba(0, 0, 0, 0.07);
+
+        }
+
+
+        .feature-table th {
+
+            background: #4f8f7b;
+
+            color: white;
+
+            padding: 13px;
+
+            text-align: left;
+
+        }
+
+
+        .feature-table td {
+
+            padding: 13px;
+
+            border-bottom:
+                1px solid #e5eee9;
+
+            color: #555;
+
+            line-height: 1.5;
+
+        }
+
+
+        .feature-table tr:last-child td {
+
+            border-bottom: none;
+
+        }
+
+
+        .feature-table tr:nth-child(even) {
+
+            background: #f7fbf9;
+
+        }
+
+
+        /* =========================
+           DỮ LIỆU IRIS
+           ========================= */
+
+        .data-title {
+
+            text-align: center;
+
+            color: #2e5d50;
+
+            font-size: 20px;
+
+            margin:
+                28px 0 8px;
+
+        }
+
+
+        .data-description {
+
+            text-align: center;
+
+            color: #666;
+
+            line-height: 1.6;
+
+            margin-bottom: 18px;
+
+        }
+
+
+        .data-cards {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap: 12px;
+
+        }
+
+
+        .data-card {
+
+            background: #f5faf8;
+
+            border:
+                2px solid #dcefe8;
+
+            border-radius: 13px;
+
+            padding:
+                16px 10px;
+
+            text-align: center;
+
+        }
+
+
+        .data-card strong {
+
+            display: block;
+
+            color: #3d7564;
+
+            font-size: 14px;
+
+            margin-bottom: 7px;
+
+        }
+
+
+        .data-card span {
+
+            color: #777;
+
+            font-size: 12px;
+
+            line-height: 1.4;
+
+        }
+
+
+        /* =========================
+           3 LỚP HOA
+           ========================= */
+
+        .three-classes {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 14px;
+
+            margin-top: 18px;
+
+        }
+
+
+        .class-card {
+
+            padding:
+                18px 10px;
+
+            border-radius: 14px;
+
+            text-align: center;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #f7fbf9,
+                    #f3f7fd
+                );
+
+            border:
+                1px solid #e0ece7;
+
+        }
+
+
+        .class-card .class-icon {
+
+            font-size: 30px;
+
+        }
+
+
+        .class-card strong {
+
+            display: block;
+
+            color: #2e5d50;
+
+            margin-top: 7px;
+
+            font-size: 14px;
+
+        }
+
+
+        .class-card span {
+
+            display: block;
+
+            margin-top: 5px;
+
+            color: #777;
+
+            font-size: 12px;
+
+        }
+
+
+        .profile-quote {
+
+            text-align: center;
+
+            color: #4f8f7b;
+
+            font-style: italic;
+
+            font-weight: bold;
+
+            margin:
+                28px 0 5px;
+
+        }
+
+
+        /* =========================
+           NÚT ĐIỀU HƯỚNG
+           ========================= */
+
+        .page-navigation {
+
+            display: flex;
+
+            justify-content: center;
+
+            gap: 12px;
+
+            margin-top: 28px;
+
+            flex-wrap: wrap;
+
+        }
+
+
+        .navigation-button {
+
+            padding:
+                12px 22px;
+
+            border: none;
+
+            border-radius: 25px;
+
+            background: #4f8f7b;
+
+            color: white;
+
+            font-size: 15px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            transition: 0.3s;
+
+        }
+
+
+        .navigation-button:hover {
+
+            background: #3d7564;
+
+            transform:
+                translateY(-2px);
+
+        }
+
+
+        .secondary-button {
+
+            background: #dcefe8;
+
+            color: #3d7564;
+
+        }
+
+
+        .secondary-button:hover {
+
+            background: #c8e3da;
+
+        }
+
+
+        /* =========================
+           TRANG 3 - HEADER
            ========================= */
 
         .header {
+
             text-align: center;
+
             margin-bottom: 30px;
+
         }
+
 
         .flower {
+
             font-size: 50px;
+
             margin-bottom: 10px;
+
         }
+
 
         h1 {
+
             margin: 0;
+
             color: #2e5d50;
+
             font-size: 32px;
+
         }
 
+
         .description {
+
             color: #666;
+
             margin-top: 10px;
+
             font-size: 15px;
+
         }
+
 
         /* =========================
            FORM
            ========================= */
 
         .form {
+
             display: grid;
-            grid-template-columns: 1fr 1fr;
+
+            grid-template-columns:
+                1fr 1fr;
+
             gap: 20px;
+
         }
+
 
         .input-group {
+
             display: flex;
+
             flex-direction: column;
+
         }
+
 
         label {
+
             font-weight: bold;
+
             color: #444;
+
             margin-bottom: 8px;
+
         }
+
 
         input {
+
             width: 100%;
+
             padding: 13px;
-            border: 2px solid #ddd;
+
+            border:
+                2px solid #ddd;
+
             border-radius: 10px;
+
             font-size: 16px;
+
             outline: none;
+
             transition: 0.3s;
+
         }
+
 
         input:focus {
+
             border-color: #5b9b8a;
-            box-shadow: 0 0 5px rgba(91, 155, 138, 0.3);
+
+            box-shadow:
+                0 0 5px
+                rgba(
+                    91,
+                    155,
+                    138,
+                    0.3
+                );
+
         }
 
+
         .unit {
+
             font-size: 12px;
+
             color: #888;
+
             margin-top: 5px;
+
         }
+
 
         /* =========================
            NÚT DỰ ĐOÁN
            ========================= */
 
         #predict-button {
+
             width: 100%;
+
             margin-top: 25px;
+
             padding: 14px;
+
             border: none;
+
             border-radius: 10px;
+
             background: #4f8f7b;
+
             color: white;
+
             font-size: 17px;
+
             font-weight: bold;
+
             cursor: pointer;
+
             transition: 0.3s;
+
         }
+
 
         #predict-button:hover {
+
             background: #3d7564;
-            transform: translateY(-2px);
+
+            transform:
+                translateY(-2px);
+
         }
 
+
         #predict-button:disabled {
+
             background: #9bbdb3;
+
             cursor: not-allowed;
+
             transform: none;
+
         }
+
 
         /* =========================
            KẾT QUẢ
            ========================= */
 
         #result {
+
             display: none;
+
             margin-top: 25px;
+
             padding: 18px;
+
             border-radius: 12px;
+
             background: #f1f8f5;
+
             text-align: center;
+
         }
+
 
         .result-title {
+
             color: #666;
+
             font-size: 14px;
+
             margin-bottom: 5px;
+
         }
+
 
         .result-value {
+
             color: #2e5d50;
+
             font-size: 24px;
+
             font-weight: bold;
+
         }
+
 
         .result-content {
+
             display: flex;
+
             align-items: center;
+
             justify-content: center;
+
             gap: 25px;
+
             margin-top: 20px;
+
         }
+
 
         .image-box {
+
             flex: 1;
+
             text-align: center;
+
         }
+
 
         #flower-image {
+
             display: none;
+
             width: 400px;
+
             max-width: 100%;
+
             border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+
+            box-shadow:
+                0 5px 15px
+                rgba(0, 0, 0, 0.15);
+
         }
+
 
         .info-box {
+
             flex: 1;
+
             background: white;
+
             padding: 20px;
+
             border-radius: 15px;
+
             text-align: left;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+
+            box-shadow:
+                0 3px 12px
+                rgba(0, 0, 0, 0.08);
+
         }
+
 
         .info-box h3 {
+
             margin-top: 0;
+
             color: #2e5d50;
+
             text-align: center;
+
         }
+
 
         .info-box ul {
+
             padding-left: 20px;
+
             margin-bottom: 0;
+
         }
+
 
         .info-box li {
+
             margin-bottom: 10px;
+
             line-height: 1.5;
+
             color: #555;
+
         }
 
+
         .footer {
+
             text-align: center;
+
             margin-top: 25px;
+
             color: #999;
+
             font-size: 12px;
+
         }
+
 
         /* =========================
            HIỆU ỨNG
            ========================= */
 
         @keyframes introAppear {
+
             from {
+
                 opacity: 0;
-                transform: translateY(35px);
+
+                transform:
+                    translateY(35px);
+
             }
 
             to {
+
                 opacity: 1;
-                transform: translateY(0);
+
+                transform:
+                    translateY(0);
+
             }
+
         }
+
 
         @keyframes titleSlide {
+
             from {
+
                 opacity: 0;
+
                 letter-spacing: 25px;
+
             }
 
             to {
+
                 opacity: 1;
+
                 letter-spacing: 8px;
+
             }
+
         }
+
 
         @keyframes flowerFloat {
 
             0%,
             100% {
-                transform: translateY(0) rotate(-5deg);
+
+                transform:
+                    translateY(0)
+                    rotate(-5deg);
+
             }
 
             50% {
-                transform: translateY(-15px) rotate(5deg);
+
+                transform:
+                    translateY(-15px)
+                    rotate(5deg);
+
             }
+
         }
+
 
         @keyframes particleMove {
 
             0%,
             100% {
-                transform: translateY(0) rotate(0deg);
+
+                transform:
+                    translateY(0)
+                    rotate(0deg);
+
             }
 
             50% {
-                transform: translateY(-25px) rotate(15deg);
+
+                transform:
+                    translateY(-25px)
+                    rotate(15deg);
+
             }
+
         }
+
+
+        @keyframes pageAppear {
+
+            from {
+
+                opacity: 0;
+
+                transform:
+                    translateY(15px);
+
+            }
+
+            to {
+
+                opacity: 1;
+
+                transform:
+                    translateY(0);
+
+            }
+
+        }
+
 
         /* =========================
            ĐIỆN THOẠI
            ========================= */
 
-        @media (max-width: 600px) {
+        @media (max-width: 700px) {
+
             .decorations {
+
                 display: none;
+
             }
+
+
+            .card-wrapper {
+
+                width: 94%;
+
+                margin:
+                    25px auto;
+
+            }
+
 
             .container {
-                padding: 25px;
+
+                padding:
+                    25px 20px;
+
             }
+
 
             .form {
-                grid-template-columns: 1fr;
+
+                grid-template-columns:
+                    1fr;
+
             }
+
 
             h1 {
+
                 font-size: 26px;
+
             }
+
 
             .result-content {
+
                 flex-direction: column;
+
             }
+
 
             .info-box {
+
                 width: 100%;
+
             }
+
 
             .intro-title {
+
                 letter-spacing: 4px;
+
             }
+
 
             .intro-subtitle {
+
                 font-size: 16px;
+
             }
 
+
             .intro-description {
+
                 font-size: 14px;
+
             }
+
+
+            .data-cards {
+
+                grid-template-columns:
+                    1fr 1fr;
+
+            }
+
+
+            .three-classes {
+
+                grid-template-columns:
+                    1fr;
+
+            }
+
+
+            .feature-table {
+
+                font-size: 13px;
+
+            }
+
+
+            .feature-table th,
+            .feature-table td {
+
+                padding:
+                    10px 8px;
+
+            }
+
+
+            .profile-header h2 {
+
+                font-size: 27px;
+
+            }
+
         }
+
     </style>
+
 </head>
+
 
 <body>
 
-    <!-- TRANG INTRO -->
 
-    <section id="intro-screen">
+<!-- ==================================================
+     TRANG 1 - INTRO
+     ================================================== -->
 
-        <span class="intro-particle particle-1">🌸</span>
-        <span class="intro-particle particle-2">✨</span>
-        <span class="intro-particle particle-3">🌿</span>
-        <span class="intro-particle particle-4">🪻</span>
-        <span class="intro-particle particle-5">🍃</span>
-        <span class="intro-particle particle-6">✨</span>
+<section id="intro-screen">
 
-        <div class="intro-content">
 
-            <div class="intro-flower">🌸</div>
+    <span class="intro-particle particle-1">
+        🌸
+    </span>
 
-            <h1 class="intro-title">IRIS FLOWER</h1>
+    <span class="intro-particle particle-2">
+        ✨
+    </span>
 
-            <p class="intro-subtitle">
-                Khám phá thế giới của những loài hoa Iris
-            </p>
+    <span class="intro-particle particle-3">
+        🌿
+    </span>
 
-            <p class="intro-description">
-                Trải nghiệm ứng dụng trí tuệ nhân tạo trong việc
-                nhận diện và phân loại hoa Iris bằng mô hình SVM.
-            </p>
+    <span class="intro-particle particle-4">
+        🪻
+    </span>
 
-            <button class="intro-button" onclick="startExploring()">
-                Bắt đầu khám phá →
-            </button>
+    <span class="intro-particle particle-5">
+        🍃
+    </span>
 
+    <span class="intro-particle particle-6">
+        ✨
+    </span>
+
+
+    <div class="intro-content">
+
+
+        <div class="intro-flower">
+            🌸
         </div>
 
-    </section>
 
-    <!-- NÚT NHỎ Ở GÓC TRÁI MÀN HÌNH -->
+        <h1 class="intro-title">
+            IRIS FLOWER
+        </h1>
 
-    <button class="back-intro-button" id="back-intro-button" onclick="backToIntro()">
-        ← Intro
-    </button>
 
-    <!-- KHUNG CHÍNH -->
+        <p class="intro-subtitle">
+            Khám phá thế giới của những loài hoa Iris
+        </p>
 
-    <div class="card-wrapper">
 
-        <!-- HOA VÀ LÁ TRANG TRÍ -->
+        <p class="intro-description">
 
-        <div class="decorations">
+            Trải nghiệm ứng dụng trí tuệ nhân tạo
+            trong việc nhận diện và phân loại hoa
+            Iris bằng mô hình SVM.
 
-            <span class="decor flower-1">🌸</span>
-            <span class="decor flower-2">🪻</span>
-            <span class="decor flower-3">🌷</span>
-            <span class="decor flower-4">🌸</span>
-            <span class="decor flower-5">🌺</span>
-            <span class="decor flower-6">🪻</span>
-            <span class="decor flower-7">🌷</span>
-            <span class="decor flower-8">🌸</span>
-            <span class="decor flower-9">🌼</span>
-            <span class="decor flower-10">🌷</span>
-            <span class="decor flower-11">🌸</span>
-            <span class="decor flower-12">🌺</span>
-            <span class="decor flower-13">🪻</span>
-            <span class="decor flower-14">🌹</span>
-            <span class="decor flower-15">🌼</span>
-            <span class="decor flower-16">🌷</span>
-            <span class="decor flower-17">🌸</span>
-            <span class="decor flower-18">🌺</span>
+        </p>
 
-            <span class="decor leaf-1">🌿</span>
-            <span class="decor leaf-2">🍃</span>
-            <span class="decor leaf-3">🌿</span>
-            <span class="decor leaf-4">🍃</span>
-            <span class="decor leaf-5">🌿</span>
-            <span class="decor leaf-6">🍃</span>
-            <span class="decor leaf-7">🌿</span>
-            <span class="decor leaf-8">🍃</span>
-            <span class="decor leaf-9">🌿</span>
-            <span class="decor leaf-10">🍃</span>
-            <span class="decor leaf-11">🌿</span>
-            <span class="decor leaf-12">🍃</span>
-            <span class="decor leaf-13">🌿</span>
-            <span class="decor leaf-14">🍃</span>
 
-        </div>
+        <button class="intro-button"
+                onclick="startExploring()">
 
-        <!-- BẢNG CHÍNH -->
+            Bắt đầu khám phá →
 
-        <div class="container">
+        </button>
+
+
+    </div>
+
+</section>
+
+
+
+<!-- ==================================================
+     KHUNG CHÍNH
+     ================================================== -->
+
+<div class="card-wrapper">
+
+
+    <!-- ==================================================
+         HOA VÀ LÁ TRANG TRÍ
+         ================================================== -->
+
+    <div class="decorations">
+
+
+        <span class="decor flower-1">
+            🌸
+        </span>
+
+        <span class="decor flower-2">
+            🪻
+        </span>
+
+        <span class="decor flower-3">
+            🌷
+        </span>
+
+        <span class="decor flower-4">
+            🌸
+        </span>
+
+        <span class="decor flower-5">
+            🌺
+        </span>
+
+        <span class="decor flower-6">
+            🪻
+        </span>
+
+        <span class="decor flower-7">
+            🌷
+        </span>
+
+        <span class="decor flower-8">
+            🌸
+        </span>
+
+        <span class="decor flower-9">
+            🌼
+        </span>
+
+        <span class="decor flower-10">
+            🌷
+        </span>
+
+        <span class="decor flower-11">
+            🌸
+        </span>
+
+        <span class="decor flower-12">
+            🌺
+        </span>
+
+        <span class="decor flower-13">
+            🪻
+        </span>
+
+        <span class="decor flower-14">
+            🌹
+        </span>
+
+        <span class="decor flower-15">
+            🌼
+        </span>
+
+        <span class="decor flower-16">
+            🌷
+        </span>
+
+        <span class="decor flower-17">
+            🌸
+        </span>
+
+        <span class="decor flower-18">
+            🌺
+        </span>
+
+
+        <span class="decor leaf-1">
+            🌿
+        </span>
+
+        <span class="decor leaf-2">
+            🍃
+        </span>
+
+        <span class="decor leaf-3">
+            🌿
+        </span>
+
+        <span class="decor leaf-4">
+            🍃
+        </span>
+
+        <span class="decor leaf-5">
+            🌿
+        </span>
+
+        <span class="decor leaf-6">
+            🍃
+        </span>
+
+        <span class="decor leaf-7">
+            🌿
+        </span>
+
+        <span class="decor leaf-8">
+            🍃
+        </span>
+
+        <span class="decor leaf-9">
+            🌿
+        </span>
+
+        <span class="decor leaf-10">
+            🍃
+        </span>
+
+        <span class="decor leaf-11">
+            🌿
+        </span>
+
+        <span class="decor leaf-12">
+            🍃
+        </span>
+
+        <span class="decor leaf-13">
+            🌿
+        </span>
+
+        <span class="decor leaf-14">
+            🍃
+        </span>
+
+
+    </div>
+
+
+
+    <!-- ==================================================
+         KHUNG NỘI DUNG
+         ================================================== -->
+
+    <div class="container">
+
+
+        <!-- ==================================================
+             TRANG 2 - IRIS PROFILE
+             ================================================== -->
+
+        <section id="profile-page"
+                 class="page">
+
+
+            <div class="profile-header">
+
+
+                <div class="profile-icon">
+                    🌸
+                </div>
+
+
+                <h2>
+                    IRIS PROFILE
+                </h2>
+
+
+                <p class="profile-subtitle">
+
+                    Hồ sơ nhận diện một loài hoa
+
+                </p>
+
+
+            </div>
+
+
+
+            <div class="profile-intro">
+
+                <b>Iris</b> là một chi thực vật
+                có hoa thuộc họ
+                <b>Iridaceae (họ Diên vĩ)</b>.
+                Iris có nhiều loài và giống khác nhau,
+                nổi bật với hình dáng hoa đặc trưng,
+                màu sắc đa dạng và khả năng thích nghi
+                với nhiều môi trường sống.
+
+            </div>
+
+
+
+            <h3 class="profile-section-title">
+
+                🔎 Đặc điểm nhận diện
+
+            </h3>
+
+
+
+            <table class="feature-table">
+
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            🌿 Đặc điểm
+                        </th>
+
+                        <th>
+                            📝 Thông tin
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+
+                    <tr>
+
+                        <td>
+                            <b>🌸 Hoa</b>
+                        </td>
+
+                        <td>
+
+                            Có hình dáng đặc trưng
+                            với các cánh hoa nổi bật.
+
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>
+                            <b>🌱 Lá</b>
+                        </td>
+
+                        <td>
+
+                            Thường dài, hẹp và mọc
+                            tập trung từ phần gốc.
+
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>
+                            <b>🎨 Màu sắc</b>
+                        </td>
+
+                        <td>
+
+                            Đa dạng, có thể gặp các màu
+                            tím, xanh, vàng, trắng
+                            và nhiều sắc độ khác.
+
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>
+                            <b>🌍 Môi trường</b>
+                        </td>
+
+                        <td>
+
+                            Các loài Iris có thể sinh trưởng
+                            trong nhiều điều kiện khác nhau.
+
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>
+                            <b>🌺 Đa dạng loài</b>
+                        </td>
+
+                        <td>
+
+                            Chi Iris gồm nhiều loài và giống
+                            với những đặc điểm riêng.
+
+                        </td>
+
+                    </tr>
+
+
+                </tbody>
+
+            </table>
+
+
+
+            <h3 class="data-title">
+
+                📐 Khi một bông hoa trở thành dữ liệu...
+
+            </h3>
+
+
+
+            <p class="data-description">
+
+                Để máy tính có thể nhận biết một mẫu hoa,
+                những đặc điểm quan sát được sẽ được
+                <b>chuyển thành các giá trị số</b>.
+
+            </p>
+
+
+
+            <div class="data-cards">
+
+
+                <div class="data-card">
+
+                    <strong>
+                        SEPAL LENGTH
+                    </strong>
+
+                    <span>
+                        Chiều dài đài hoa
+                    </span>
+
+                </div>
+
+
+                <div class="data-card">
+
+                    <strong>
+                        SEPAL WIDTH
+                    </strong>
+
+                    <span>
+                        Chiều rộng đài hoa
+                    </span>
+
+                </div>
+
+
+                <div class="data-card">
+
+                    <strong>
+                        PETAL LENGTH
+                    </strong>
+
+                    <span>
+                        Chiều dài cánh hoa
+                    </span>
+
+                </div>
+
+
+                <div class="data-card">
+
+                    <strong>
+                        PETAL WIDTH
+                    </strong>
+
+                    <span>
+                        Chiều rộng cánh hoa
+                    </span>
+
+                </div>
+
+
+            </div>
+
+
+
+            <h3 class="profile-section-title">
+
+                🌺 Ba lớp hoa trong bộ dữ liệu
+
+            </h3>
+
+
+
+            <div class="three-classes">
+
+
+                <div class="class-card">
+
+                    <div class="class-icon">
+                        🌸
+                    </div>
+
+                    <strong>
+                        SETOSA
+                    </strong>
+
+                    <span>
+                        Lớp hoa thứ nhất
+                    </span>
+
+                </div>
+
+
+                <div class="class-card">
+
+                    <div class="class-icon">
+                        🌷
+                    </div>
+
+                    <strong>
+                        VERSICOLOR
+                    </strong>
+
+                    <span>
+                        Lớp hoa thứ hai
+                    </span>
+
+                </div>
+
+
+                <div class="class-card">
+
+                    <div class="class-icon">
+                        🌺
+                    </div>
+
+                    <strong>
+                        VIRGINICA
+                    </strong>
+
+                    <span>
+                        Lớp hoa thứ ba
+                    </span>
+
+                </div>
+
+
+            </div>
+
+
+
+            <p class="profile-quote">
+
+                “Hãy để những con số kể cho chúng ta biết
+                bông hoa thuộc về đâu.”
+
+            </p>
+
+
+
+            <!-- NÚT TRANG 2 -->
+
+            <div class="page-navigation">
+
+
+                <button class="navigation-button secondary-button"
+                        onclick="backToIntro()">
+
+                    ← Trang chủ
+
+                </button>
+
+
+                <button class="navigation-button"
+                        onclick="showPage('prediction-page')">
+
+                    🔍 Bắt đầu dự đoán →
+
+                </button>
+
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- ==================================================
+             TRANG 3 - DỰ ĐOÁN
+             ================================================== -->
+
+        <section id="prediction-page"
+                 class="page">
+
 
             <div class="header">
 
-                <div class="flower">🌸</div>
 
-                <h1>Iris Flower Prediction</h1>
+                <div class="flower">
+                    🌸
+                </div>
+
+
+                <h1>
+                    Iris Flower Prediction
+                </h1>
+
 
                 <p class="description">
-                    Nhập 4 thông số của hoa để dự đoán loài Iris bằng mô hình SVM
+
+                    Nhập 4 thông số của hoa để dự đoán
+                    loài Iris bằng mô hình SVM
+
                 </p>
+
 
             </div>
 
-            <!-- FORM NHẬP DỮ LIỆU -->
+
+
+            <!-- FORM -->
 
             <div class="form">
 
-                <div class="input-group">
-
-                    <label for="sepal_length">Sepal Length</label>
-
-                    <input type="number" step="any" id="sepal_length" placeholder="Ví dụ: 5.1">
-
-                    <span class="unit">Chiều dài đài hoa</span>
-
-                </div>
 
                 <div class="input-group">
 
-                    <label for="sepal_width">Sepal Width</label>
 
-                    <input type="number" step="any" id="sepal_width" placeholder="Ví dụ: 3.5">
+                    <label for="sepal_length">
 
-                    <span class="unit">Chiều rộng đài hoa</span>
+                        Sepal Length
+
+                    </label>
+
+
+                    <input
+                        type="number"
+                        step="any"
+                        id="sepal_length"
+                        placeholder="Ví dụ: 5.1"
+                    >
+
+
+                    <span class="unit">
+
+                        Chiều dài đài hoa
+
+                    </span>
+
 
                 </div>
+
+
 
                 <div class="input-group">
 
-                    <label for="petal_length">Petal Length</label>
 
-                    <input type="number" step="any" id="petal_length" placeholder="Ví dụ: 1.4">
+                    <label for="sepal_width">
 
-                    <span class="unit">Chiều dài cánh hoa</span>
+                        Sepal Width
+
+                    </label>
+
+
+                    <input
+                        type="number"
+                        step="any"
+                        id="sepal_width"
+                        placeholder="Ví dụ: 3.5"
+                    >
+
+
+                    <span class="unit">
+
+                        Chiều rộng đài hoa
+
+                    </span>
+
 
                 </div>
+
+
 
                 <div class="input-group">
 
-                    <label for="petal_width">Petal Width</label>
 
-                    <input type="number" step="any" id="petal_width" placeholder="Ví dụ: 0.2">
+                    <label for="petal_length">
 
-                    <span class="unit">Chiều rộng cánh hoa</span>
+                        Petal Length
+
+                    </label>
+
+
+                    <input
+                        type="number"
+                        step="any"
+                        id="petal_length"
+                        placeholder="Ví dụ: 1.4"
+                    >
+
+
+                    <span class="unit">
+
+                        Chiều dài cánh hoa
+
+                    </span>
+
 
                 </div>
+
+
+
+                <div class="input-group">
+
+
+                    <label for="petal_width">
+
+                        Petal Width
+
+                    </label>
+
+
+                    <input
+                        type="number"
+                        step="any"
+                        id="petal_width"
+                        placeholder="Ví dụ: 0.2"
+                    >
+
+
+                    <span class="unit">
+
+                        Chiều rộng cánh hoa
+
+                    </span>
+
+
+                </div>
+
 
             </div>
 
+
+
             <!-- NÚT DỰ ĐOÁN -->
 
-            <button id="predict-button" onclick="predict()">
+            <button id="predict-button"
+                    onclick="predict()">
+
                 🔍 Dự đoán loài hoa
+
             </button>
+
+
 
             <!-- KẾT QUẢ -->
 
             <div id="result">
 
+
                 <div class="result-title">
+
                     Kết quả dự đoán
+
                 </div>
 
-                <div class="result-value" id="prediction"></div>
+
+                <div class="result-value"
+                     id="prediction">
+
+                </div>
+
 
                 <div class="result-content">
 
+
                     <div class="image-box">
 
-                        <img id="flower-image" src="" alt="Hoa Iris">
+
+                        <img id="flower-image"
+                             src=""
+                             alt="Hoa Iris">
+
 
                     </div>
+
 
                     <div class="info-box">
 
-                        <h3>🌸 Đặc điểm loài hoa</h3>
 
-                        <div id="flower-info"></div>
+                        <h3>
+
+                            🌸 Đặc điểm loài hoa
+
+                        </h3>
+
+
+                        <div id="flower-info">
+                        </div>
+
 
                     </div>
 
+
                 </div>
 
+
             </div>
+
+
+
+            <!-- QUAY LẠI TRANG 2 -->
+
+            <div class="page-navigation">
+
+
+                <button class="navigation-button secondary-button"
+                        onclick="showPage('profile-page')">
+
+                    ← Tổng quan Iris
+
+                </button>
+
+
+            </div>
+
+
 
             <div class="footer">
+
                 Iris SVM Prediction • FastAPI
+
             </div>
 
-        </div>
+
+        </section>
+
 
     </div>
 
-    <script>
+</div>
 
-        /* THÔNG TIN CỦA 3 LOÀI HOA */
 
-        const flowerData = {
 
-            setosa: {
-                image: "/images/Setosa.jpg",
-                info: `
-                    <ul>
-                        <li>
-                            <b>Kích thước:</b>
-                            Nhỏ nhất trong ba loài.
-                        </li>
+<script>
 
-                        <li>
-                            <b>Cánh hoa:</b>
-                            Rất ngắn và hẹp, dễ dàng phân biệt
-                            với hai loài còn lại.
-                        </li>
 
-                        <li>
-                            <b>Đài hoa:</b>
-                            Chiều dài và chiều rộng tập trung
-                            ở mức thấp nhất.
-                        </li>
-                    </ul>
-                `
-            },
+    /* ==================================================
+       THÔNG TIN 3 LOÀI HOA
+       ================================================== */
 
-            versicolor: {
-                image: "/images/Versicolor.jpg",
-                info: `
-                    <ul>
-                        <li>
-                            <b>Kích thước:</b>
-                            Trung bình, nằm ở khoảng giữa.
-                        </li>
+    const flowerData = {
 
-                        <li>
-                            <b>Cánh hoa:</b>
-                            Lớn hơn Iris Setosa nhưng nhỏ hơn
-                            Iris Virginica.
-                        </li>
 
-                        <li>
-                            <b>Đài hoa:</b>
-                            Các thông số có xu hướng ở mức
-                            trung gian.
-                        </li>
-                    </ul>
-                `
-            },
+        setosa: {
 
-            virginica: {
-                image: "/images/Virginica.jpg",
-                info: `
-                    <ul>
-                        <li>
-                            <b>Kích thước:</b>
-                            Lớn nhất trong ba loài.
-                        </li>
+            image:
+                "/images/Setosa.jpg",
 
-                        <li>
-                            <b>Cánh hoa:</b>
-                            Dài và rộng nhất, đôi khi có sự
-                            chồng lấn nhẹ với Iris Versicolor.
-                        </li>
+            info: `
 
-                        <li>
-                            <b>Đài hoa:</b>
-                            Chiều dài và chiều rộng phân bố
-                            ở mức cao nhất.
-                        </li>
-                    </ul>
-                `
-            }
+                <ul>
 
-        };
+                    <li>
 
-        /* HÀM DỰ ĐOÁN */
+                        <b>Kích thước:</b>
+                        Nhỏ nhất trong ba loài.
 
-        async function predict() {
+                    </li>
 
-            const sepal_length =
-                document.getElementById("sepal_length").value;
 
-            const sepal_width =
-                document.getElementById("sepal_width").value;
+                    <li>
 
-            const petal_length =
-                document.getElementById("petal_length").value;
+                        <b>Cánh hoa:</b>
+                        Rất ngắn và hẹp,
+                        dễ dàng phân biệt
+                        với hai loài còn lại.
 
-            const petal_width =
-                document.getElementById("petal_width").value;
+                    </li>
 
-            if (
-                !sepal_length ||
-                !sepal_width ||
-                !petal_length ||
-                !petal_width ||
-                Number(sepal_length) <= 0 ||
-                Number(sepal_width) <= 0 ||
-                Number(petal_length) <= 0 ||
-                Number(petal_width) <= 0
-            ) {
-                alert("Vui lòng nhập 4 thông số lớn hơn 0!");
-                return;
-            }
 
-            const button =
-                document.getElementById("predict-button");
+                    <li>
 
-            const result =
-                document.getElementById("result");
+                        <b>Đài hoa:</b>
+                        Chiều dài và chiều rộng
+                        tập trung ở mức thấp nhất.
 
-            const prediction =
-                document.getElementById("prediction");
+                    </li>
 
-            const flowerImage =
-                document.getElementById("flower-image");
+                </ul>
 
-            const flowerInfo =
-                document.getElementById("flower-info");
+            `
 
-            button.disabled = true;
-            button.innerText = "⏳ Đang dự đoán...";
+        },
 
-            try {
 
-                const response = await fetch("/predict", {
+        versicolor: {
 
-                    method: "POST",
+            image:
+                "/images/Versicolor.jpg",
 
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+            info: `
 
-                    body: JSON.stringify({
+                <ul>
 
-                        sepal_length: Number(sepal_length),
-                        sepal_width: Number(sepal_width),
-                        petal_length: Number(petal_length),
-                        petal_width: Number(petal_width)
+                    <li>
 
-                    })
+                        <b>Kích thước:</b>
+                        Trung bình,
+                        nằm ở khoảng giữa.
 
-                });
+                    </li>
 
-                if (!response.ok) {
-                    throw new Error("API không phản hồi thành công");
-                }
 
-                const data = await response.json();
+                    <li>
 
-                const flowerName =
-                    String(data.prediction).toLowerCase();
+                        <b>Cánh hoa:</b>
+                        Lớn hơn Iris Setosa
+                        nhưng nhỏ hơn
+                        Iris Virginica.
 
-                const flower =
-                    flowerData[flowerName];
+                    </li>
 
-                result.style.display = "block";
 
-                prediction.innerText = data.prediction;
+                    <li>
 
-                if (flower) {
+                        <b>Đài hoa:</b>
+                        Các thông số có xu hướng
+                        ở mức trung gian.
 
-                    flowerImage.src = flower.image;
-                    flowerInfo.innerHTML = flower.info;
-                    flowerImage.style.display = "block";
+                    </li>
 
-                }
+                </ul>
 
-            } catch (error) {
+            `
 
-                console.error(error);
+        },
 
-                result.style.display = "block";
 
-                prediction.innerText = "Có lỗi xảy ra!";
+        virginica: {
 
-                flowerImage.style.display = "none";
+            image:
+                "/images/Virginica.jpg",
 
-                flowerInfo.innerHTML = `
-                    <p style="color: #c0392b; text-align: center;">
-                        Không thể kết nối với hệ thống dự đoán.
-                        Vui lòng thử lại.
-                    </p>
-                `;
+            info: `
 
-            } finally {
+                <ul>
 
-                button.disabled = false;
-                button.innerText = "🔍 Dự đoán loài hoa";
+                    <li>
 
-            }
+                        <b>Kích thước:</b>
+                        Lớn nhất trong ba loài.
+
+                    </li>
+
+
+                    <li>
+
+                        <b>Cánh hoa:</b>
+                        Dài và rộng nhất,
+                        đôi khi có sự chồng lấn nhẹ
+                        với Iris Versicolor.
+
+                    </li>
+
+
+                    <li>
+
+                        <b>Đài hoa:</b>
+                        Chiều dài và chiều rộng
+                        phân bố ở mức cao nhất.
+
+                    </li>
+
+                </ul>
+
+            `
 
         }
 
-        /* CHUYỂN TỪ INTRO SANG TRANG DỰ ĐOÁN */
+    };
 
-        function startExploring() {
 
-            const intro =
-                document.getElementById("intro-screen");
 
-            const mainPage =
-                document.querySelector(".card-wrapper");
+    /* ==================================================
+       HIỂN THỊ TRANG
+       ================================================== */
 
-            const backButton =
-                document.getElementById("back-intro-button");
+    function showPage(pageId) {
 
-            intro.classList.add("hide");
 
-            setTimeout(() => {
+        document
+            .querySelectorAll(".page")
+            .forEach(page => {
 
-                mainPage.style.display = "block";
-                backButton.style.display = "block";
+                page.classList.remove("active");
 
-                document.body.style.alignItems = "flex-start";
-                document.body.style.paddingTop = "40px";
+            });
 
-            }, 500);
+
+        document
+            .getElementById(pageId)
+            .classList.add("active");
+
+
+        window.scrollTo({
+
+            top: 0,
+
+            behavior: "smooth"
+
+        });
+
+    }
+
+
+
+    /* ==================================================
+       BẮT ĐẦU KHÁM PHÁ
+       ================================================== */
+
+    function startExploring() {
+
+
+        const intro =
+            document.getElementById(
+                "intro-screen"
+            );
+
+
+        const mainPage =
+            document.querySelector(
+                ".card-wrapper"
+            );
+
+
+        intro.classList.add("hide");
+
+
+        setTimeout(() => {
+
+
+            mainPage.style.display =
+                "block";
+
+
+            document.body.style.alignItems =
+                "flex-start";
+
+
+            document.body.style.paddingTop =
+                "40px";
+
+
+            showPage(
+                "profile-page"
+            );
+
+
+        }, 500);
+
+    }
+
+
+
+    /* ==================================================
+       QUAY LẠI TRANG 1
+       ================================================== */
+
+    function backToIntro() {
+
+
+        const intro =
+            document.getElementById(
+                "intro-screen"
+            );
+
+
+        const mainPage =
+            document.querySelector(
+                ".card-wrapper"
+            );
+
+
+        mainPage.style.display =
+            "none";
+
+
+        intro.classList.remove("hide");
+
+
+        document.body.style.alignItems =
+            "center";
+
+
+        document.body.style.paddingTop =
+            "0";
+
+
+    }
+
+
+
+    /* ==================================================
+       DỰ ĐOÁN
+       ================================================== */
+
+    async function predict() {
+
+
+        const sepal_length =
+            document.getElementById(
+                "sepal_length"
+            ).value;
+
+
+        const sepal_width =
+            document.getElementById(
+                "sepal_width"
+            ).value;
+
+
+        const petal_length =
+            document.getElementById(
+                "petal_length"
+            ).value;
+
+
+        const petal_width =
+            document.getElementById(
+                "petal_width"
+            ).value;
+
+
+
+        /* KIỂM TRA DỮ LIỆU */
+
+        if (
+
+            !sepal_length ||
+
+            !sepal_width ||
+
+            !petal_length ||
+
+            !petal_width ||
+
+            Number(sepal_length) <= 0 ||
+
+            Number(sepal_width) <= 0 ||
+
+            Number(petal_length) <= 0 ||
+
+            Number(petal_width) <= 0
+
+        ) {
+
+
+            alert(
+                "Vui lòng nhập 4 thông số lớn hơn 0!"
+            );
+
+
+            return;
 
         }
 
-        /* QUAY LẠI TRANG INTRO */
 
-        function backToIntro() {
 
-            const intro =
-                document.getElementById("intro-screen");
+        const button =
+            document.getElementById(
+                "predict-button"
+            );
 
-            const mainPage =
-                document.querySelector(".card-wrapper");
 
-            const backButton =
-                document.getElementById("back-intro-button");
+        const result =
+            document.getElementById(
+                "result"
+            );
 
-            mainPage.style.display = "none";
-            backButton.style.display = "none";
 
-            intro.classList.remove("hide");
+        const prediction =
+            document.getElementById(
+                "prediction"
+            );
 
-            document.body.style.alignItems = "center";
-            document.body.style.paddingTop = "0";
+
+        const flowerImage =
+            document.getElementById(
+                "flower-image"
+            );
+
+
+        const flowerInfo =
+            document.getElementById(
+                "flower-info"
+            );
+
+
+
+        button.disabled = true;
+
+
+        button.innerText =
+            "⏳ Đang dự đoán...";
+
+
+
+        try {
+
+
+            const response =
+                await fetch(
+                    "/predict",
+                    {
+
+                        method: "POST",
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json"
+
+                        },
+
+                        body:
+                            JSON.stringify({
+
+                                sepal_length:
+                                    Number(
+                                        sepal_length
+                                    ),
+
+                                sepal_width:
+                                    Number(
+                                        sepal_width
+                                    ),
+
+                                petal_length:
+                                    Number(
+                                        petal_length
+                                    ),
+
+                                petal_width:
+                                    Number(
+                                        petal_width
+                                    )
+
+                            })
+
+                    }
+                );
+
+
+
+            if (!response.ok) {
+
+
+                throw new Error(
+                    "API không phản hồi thành công"
+                );
+
+            }
+
+
+
+            const data =
+                await response.json();
+
+
+
+            const flowerName =
+                String(
+                    data.prediction
+                ).toLowerCase();
+
+
+
+            const flower =
+                flowerData[
+                    flowerName
+                ];
+
+
+
+            result.style.display =
+                "block";
+
+
+
+            prediction.innerText =
+                data.prediction;
+
+
+
+            if (flower) {
+
+
+                flowerImage.src =
+                    flower.image;
+
+
+                flowerInfo.innerHTML =
+                    flower.info;
+
+
+                flowerImage.style.display =
+                    "block";
+
+            }
+
 
         }
 
-    </script>
+
+        catch (error) {
+
+
+            console.error(error);
+
+
+            result.style.display =
+                "block";
+
+
+            prediction.innerText =
+                "Có lỗi xảy ra!";
+
+
+            flowerImage.style.display =
+                "none";
+
+
+            flowerInfo.innerHTML = `
+
+                <p style="
+                    color: #c0392b;
+                    text-align: center;
+                ">
+
+                    Không thể kết nối với
+                    hệ thống dự đoán.
+                    Vui lòng thử lại.
+
+                </p>
+
+            `;
+
+        }
+
+
+        finally {
+
+
+            button.disabled =
+                false;
+
+
+            button.innerText =
+                "🔍 Dự đoán loài hoa";
+
+
+        }
+
+    }
+
+
+</script>
+
 
 </body>
 
