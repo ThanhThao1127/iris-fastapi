@@ -2,25 +2,13 @@
     {
         "prediction_id": 1,
         "user_id": 1,
-        "sepal_length": 1.0,
-        "sepal_width": 1.0,
-        "petal_length": 1.0,
-        "petal_width": 1.0,
+        "sepal_length": 2.0,
+        "sepal_width": 2.0,
+        "petal_length": 5.0,
+        "petal_width": 0.5,
         "model_name": "SVM",
-        "prediction": "Setosa",
-        "processing_time": 0.0231,
-        "created_at": "29/09/2026 22:46:26"
-    },
-    {
-        "prediction_id": 2,
-        "user_id": 1,
-        "sepal_length": 5.1,
-        "sepal_width": 3.5,
-        "petal_length": 1.4,
-        "petal_width": 0.2,
-        "model_name": "SVM",
-        "prediction": "Setosa",
-        "processing_time": 0.0123,
-        "created_at": "29/09/2026 22:50:48"
+        "prediction": "Versicolor",
+        "processing_time": 0.001,
+        "created_at": "30/09/2026 01:49:50"
     }
 ]
