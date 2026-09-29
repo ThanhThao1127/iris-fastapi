@@ -7,72 +7,99 @@ from datetime import datetime, timezone, timedelta
 
 import joblib
 import time
-import json
 import os
+import hashlib
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 
 # =========================================================
 # ĐƯỜNG DẪN FILE
 # =========================================================
 
-# Lấy thư mục chứa file api.py
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# File lưu dữ liệu
-USERS_FILE = os.path.join(BASE_DIR, "users.json")
-HISTORY_FILE = os.path.join(BASE_DIR, "history.json")
+
+# =========================================================
+# DATABASE
+# =========================================================
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+
+def get_connection():
+    if not DATABASE_URL:
+        raise Exception("Chưa cấu hình DATABASE_URL trên Render!")
+
+    return psycopg2.connect(
+        DATABASE_URL,
+        connect_timeout=5
+    )
 
 
 # =========================================================
-# TẠO FILE JSON NẾU CHƯA CÓ
+# TẠO DATABASE TABLE
 # =========================================================
 
-if not os.path.exists(USERS_FILE):
-    with open(USERS_FILE, "w", encoding="utf-8") as f:
-        json.dump([], f, ensure_ascii=False, indent=4)
+def create_tables():
 
-if not os.path.exists(HISTORY_FILE):
-    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
-        json.dump([], f, ensure_ascii=False, indent=4)
-
-
-# =========================================================
-# ĐỌC JSON
-# =========================================================
-
-def load_json(filename):
     try:
-        with open(filename, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return []
 
+        conn = get_connection()
+        cursor = conn.cursor()
 
-# =========================================================
-# LƯU JSON
-# =========================================================
+        # -----------------------------
+        # BẢNG USERS
+        # -----------------------------
 
-def save_json(filename, data):
-    with open(filename, "w", encoding="utf-8") as f:
-        json.dump(
-            data,
-            f,
-            ensure_ascii=False,
-            indent=4
-        )
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS Users (
+                UserID SERIAL PRIMARY KEY,
+                Username VARCHAR(50) UNIQUE NOT NULL,
+                Password VARCHAR(255) NOT NULL
+            )
+        """)
 
+        # -----------------------------
+        # BẢNG PREDICTIONS
+        # -----------------------------
 
-# =========================================================
-# TẢI MODEL
-# =========================================================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS Predictions (
+                PredictionID SERIAL PRIMARY KEY,
 
-model = joblib.load(
-    os.path.join(BASE_DIR, "svm_model.pkl")
-)
+                UserID INTEGER NOT NULL,
 
-scaler = joblib.load(
-    os.path.join(BASE_DIR, "scaler.pkl")
-)
+                SepalLength DOUBLE PRECISION,
+                SepalWidth DOUBLE PRECISION,
+                PetalLength DOUBLE PRECISION,
+                PetalWidth DOUBLE PRECISION,
+
+                ModelName VARCHAR(50),
+                Prediction VARCHAR(50),
+
+                ProcessingTime DOUBLE PRECISION,
+
+                CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                CONSTRAINT fk_predictions_users
+                    FOREIGN KEY (UserID)
+                    REFERENCES Users(UserID)
+                    ON DELETE CASCADE
+            )
+        """)
+
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        print("Kết nối PostgreSQL thành công!")
+        print("Đã kiểm tra / tạo bảng Users và Predictions.")
+
+    except Exception as e:
+
+        print("Không thể kết nối PostgreSQL:", e)
 
 
 # =========================================================
@@ -84,6 +111,16 @@ app = FastAPI(
     description="SVM model for the Iris dataset",
     version="1.0.0"
 )
+
+
+# =========================================================
+# TẠO DATABASE KHI SERVER KHỞI ĐỘNG
+# =========================================================
+
+@app.on_event("startup")
+def startup_event():
+
+    create_tables()
 
 
 # =========================================================
@@ -152,11 +189,23 @@ species = {
 
 
 # =========================================================
+# MÃ HÓA MẬT KHẨU
+# =========================================================
+
+def hash_password(password):
+
+    return hashlib.sha256(
+        password.encode("utf-8")
+    ).hexdigest()
+
+
+# =========================================================
 # TRANG CHỦ
 # =========================================================
 
 @app.get("/")
 def home():
+
     return FileResponse(
         os.path.join(BASE_DIR, "api.html")
     )
@@ -168,6 +217,7 @@ def home():
 
 @app.get("/health")
 def health():
+
     return {
         "status": "healthy"
     }
@@ -180,50 +230,79 @@ def health():
 @app.post("/register")
 def register(data: RegisterInput):
 
-    users = load_json(USERS_FILE)
+    conn = None
 
-    # Kiểm tra tên đăng nhập
-    for user in users:
+    try:
 
-        if user["username"] == data.username:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # Kiểm tra username đã tồn tại
+        cursor.execute(
+            """
+            SELECT UserID
+            FROM Users
+            WHERE Username = %s
+            """,
+            (data.username,)
+        )
+
+        existing_user = cursor.fetchone()
+
+        if existing_user:
+
+            cursor.close()
+            conn.close()
 
             return {
                 "success": False,
                 "message": "Tên đăng nhập đã tồn tại!"
             }
 
-    # Tạo User ID mới
-    if users:
+        # Mã hóa mật khẩu
+        password_hash = hash_password(
+            data.password
+        )
 
-        new_user_id = max(
-            user["user_id"]
-            for user in users
-        ) + 1
+        # Thêm user
+        cursor.execute(
+            """
+            INSERT INTO Users
+            (Username, Password)
+            VALUES (%s, %s)
+            RETURNING UserID
+            """,
+            (
+                data.username,
+                password_hash
+            )
+        )
 
-    else:
+        user_id = cursor.fetchone()[0]
 
-        new_user_id = 1
+        conn.commit()
 
-    # Tạo tài khoản mới
-    new_user = {
-        "user_id": new_user_id,
-        "username": data.username,
-        "password": data.password
-    }
+        cursor.close()
+        conn.close()
 
-    users.append(new_user)
+        return {
+            "success": True,
+            "message": "Đăng ký thành công!",
+            "user_id": user_id
+        }
 
-    # Lưu vào users.json
-    save_json(
-        USERS_FILE,
-        users
-    )
+    except Exception as e:
 
-    return {
-        "success": True,
-        "message": "Đăng ký thành công!",
-        "user_id": new_user_id
-    }
+        if conn:
+            conn.rollback()
+            conn.close()
+
+        print("Lỗi đăng ký:", e)
+
+        return {
+            "success": False,
+            "message": "Không thể đăng ký tài khoản!"
+        }
 
 
 # =========================================================
@@ -233,27 +312,62 @@ def register(data: RegisterInput):
 @app.post("/login")
 def login(data: LoginInput):
 
-    users = load_json(USERS_FILE)
+    conn = None
 
-    for user in users:
+    try:
 
-        if (
-            user["username"] == data.username
-            and
-            user["password"] == data.password
-        ):
+        conn = get_connection()
+        cursor = conn.cursor(
+            cursor_factory=RealDictCursor
+        )
+
+        password_hash = hash_password(
+            data.password
+        )
+
+        cursor.execute(
+            """
+            SELECT UserID, Username
+            FROM Users
+            WHERE Username = %s
+            AND Password = %s
+            """,
+            (
+                data.username,
+                password_hash
+            )
+        )
+
+        user = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        if user:
 
             return {
                 "success": True,
                 "message": "Đăng nhập thành công!",
-                "user_id": user["user_id"],
+                "user_id": user["userid"],
                 "username": user["username"]
             }
 
-    return {
-        "success": False,
-        "message": "Tên đăng nhập hoặc mật khẩu không đúng!"
-    }
+        return {
+            "success": False,
+            "message": "Tên đăng nhập hoặc mật khẩu không đúng!"
+        }
+
+    except Exception as e:
+
+        if conn:
+            conn.close()
+
+        print("Lỗi đăng nhập:", e)
+
+        return {
+            "success": False,
+            "message": "Không thể kết nối cơ sở dữ liệu!"
+        }
 
 
 # =========================================================
@@ -263,38 +377,84 @@ def login(data: LoginInput):
 @app.post("/change-password")
 def change_password(data: ChangePasswordInput):
 
-    users = load_json(USERS_FILE)
+    conn = None
 
-    for user in users:
+    try:
 
-        if user["user_id"] == data.user_id:
+        conn = get_connection()
+        cursor = conn.cursor()
 
-            # Kiểm tra mật khẩu cũ
-            if user["password"] != data.old_password:
+        # Mã hóa mật khẩu cũ
+        old_password_hash = hash_password(
+            data.old_password
+        )
 
-                return {
-                    "success": False,
-                    "message": "Mật khẩu cũ không đúng!"
-                }
-
-            # Cập nhật mật khẩu
-            user["password"] = data.new_password
-
-            # Lưu lại users.json
-            save_json(
-                USERS_FILE,
-                users
+        # Kiểm tra tài khoản
+        cursor.execute(
+            """
+            SELECT UserID
+            FROM Users
+            WHERE UserID = %s
+            AND Password = %s
+            """,
+            (
+                data.user_id,
+                old_password_hash
             )
+        )
+
+        user = cursor.fetchone()
+
+        if not user:
+
+            cursor.close()
+            conn.close()
 
             return {
-                "success": True,
-                "message": "Đổi mật khẩu thành công!"
+                "success": False,
+                "message": "Mật khẩu cũ không đúng!"
             }
 
-    return {
-        "success": False,
-        "message": "Không tìm thấy tài khoản!"
-    }
+        # Mã hóa mật khẩu mới
+        new_password_hash = hash_password(
+            data.new_password
+        )
+
+        # Cập nhật
+        cursor.execute(
+            """
+            UPDATE Users
+            SET Password = %s
+            WHERE UserID = %s
+            """,
+            (
+                new_password_hash,
+                data.user_id
+            )
+        )
+
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        return {
+            "success": True,
+            "message": "Đổi mật khẩu thành công!"
+        }
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+            conn.close()
+
+        print("Lỗi đổi mật khẩu:", e)
+
+        return {
+            "success": False,
+            "message": "Không thể đổi mật khẩu!"
+        }
 
 
 # =========================================================
@@ -306,104 +466,148 @@ def predict(data: PredictInput):
 
     start_time = time.time()
 
-    # Dữ liệu đầu vào
-    features = [[
-        data.sepal_length,
-        data.sepal_width,
-        data.petal_length,
-        data.petal_width
-    ]]
-
-    # Chuẩn hóa dữ liệu
-    scaled_features = scaler.transform(features)
-
-    # Dự đoán
-    prediction = int(
-        model.predict(scaled_features)[0]
-    )
-
-    # Tên loài
-    prediction_name = species[prediction]
-
-    # Thời gian xử lý
-    processing_time = time.time() - start_time
-
-    # Thời gian Việt Nam
-    vietnam_time = (
-        datetime.now(timezone.utc)
-        + timedelta(hours=7)
-    ).replace(tzinfo=None)
-
     # =====================================================
-    # ĐỌC HISTORY.JSON
+    # KIỂM TRA USER
     # =====================================================
 
-    history_data = load_json(HISTORY_FILE)
+    conn = None
 
-    # =====================================================
-    # TẠO ID DỰ ĐOÁN
-    # =====================================================
+    try:
 
-    if history_data:
+        conn = get_connection()
+        cursor = conn.cursor()
 
-        new_prediction_id = max(
-            item["prediction_id"]
-            for item in history_data
-        ) + 1
-
-    else:
-
-        new_prediction_id = 1
-
-    # =====================================================
-    # THÊM LỊCH SỬ
-    # =====================================================
-
-    new_history = {
-
-        "prediction_id": new_prediction_id,
-
-        "user_id": data.user_id,
-
-        "sepal_length": data.sepal_length,
-
-        "sepal_width": data.sepal_width,
-
-        "petal_length": data.petal_length,
-
-        "petal_width": data.petal_width,
-
-        "model_name": "SVM",
-
-        "prediction": prediction_name,
-
-        "processing_time": round(
-            processing_time,
-            4
-        ),
-
-        "created_at": vietnam_time.strftime(
-            "%d/%m/%Y %H:%M:%S"
+        cursor.execute(
+            """
+            SELECT UserID
+            FROM Users
+            WHERE UserID = %s
+            """,
+            (data.user_id,)
         )
-    }
 
-    history_data.append(
-        new_history
-    )
+        user = cursor.fetchone()
 
-    # =====================================================
-    # LƯU HISTORY.JSON
-    # =====================================================
+        if not user:
 
-    save_json(
-        HISTORY_FILE,
-        history_data
-    )
+            cursor.close()
+            conn.close()
 
-    return {
-        "success": True,
-        "prediction": prediction_name
-    }
+            return {
+                "success": False,
+                "message": "Không tìm thấy tài khoản!"
+            }
+
+        # =================================================
+        # DỮ LIỆU ĐẦU VÀO
+        # =================================================
+
+        features = [[
+            data.sepal_length,
+            data.sepal_width,
+            data.petal_length,
+            data.petal_width
+        ]]
+
+        # =================================================
+        # CHUẨN HÓA
+        # =================================================
+
+        scaled_features = scaler.transform(
+            features
+        )
+
+        # =================================================
+        # DỰ ĐOÁN
+        # =================================================
+
+        prediction = int(
+            model.predict(
+                scaled_features
+            )[0]
+        )
+
+        prediction_name = species[
+            prediction
+        ]
+
+        # =================================================
+        # THỜI GIAN XỬ LÝ
+        # =================================================
+
+        processing_time = (
+            time.time() - start_time
+        )
+
+        # =================================================
+        # THỜI GIAN VIỆT NAM
+        # =================================================
+
+        vietnam_time = (
+            datetime.now(timezone.utc)
+            + timedelta(hours=7)
+        ).replace(tzinfo=None)
+
+        # =================================================
+        # LƯU VÀO DATABASE
+        # =================================================
+
+        cursor.execute(
+            """
+            INSERT INTO Predictions
+            (
+                UserID,
+                SepalLength,
+                SepalWidth,
+                PetalLength,
+                PetalWidth,
+                ModelName,
+                Prediction,
+                ProcessingTime,
+                CreatedAt
+            )
+            VALUES
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                data.user_id,
+                data.sepal_length,
+                data.sepal_width,
+                data.petal_length,
+                data.petal_width,
+                "SVM",
+                prediction_name,
+                round(
+                    processing_time,
+                    4
+                ),
+                vietnam_time
+            )
+        )
+
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        return {
+            "success": True,
+            "prediction": prediction_name
+        }
+
+    except Exception as e:
+
+        if conn:
+
+            conn.rollback()
+            conn.close()
+
+        print("Lỗi dự đoán:", e)
+
+        return {
+            "success": False,
+            "message": "Không thể lưu kết quả dự đoán!"
+        }
 
 
 # =========================================================
@@ -413,31 +617,112 @@ def predict(data: PredictInput):
 @app.get("/history/{user_id}")
 def history(user_id: int):
 
-    history_data = load_json(
-        HISTORY_FILE
+    conn = None
+
+    try:
+
+        conn = get_connection()
+
+        cursor = conn.cursor(
+            cursor_factory=RealDictCursor
+        )
+
+        cursor.execute(
+            """
+            SELECT
+                PredictionID,
+                UserID,
+                SepalLength,
+                SepalWidth,
+                PetalLength,
+                PetalWidth,
+                ModelName,
+                Prediction,
+                ProcessingTime,
+                CreatedAt
+            FROM Predictions
+            WHERE UserID = %s
+            ORDER BY PredictionID DESC
+            """,
+            (user_id,)
+        )
+
+        rows = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        history_data = []
+
+        for item in rows:
+
+            history_data.append({
+
+                "prediction_id": item["predictionid"],
+
+                "user_id": item["userid"],
+
+                "sepal_length": item["sepallength"],
+
+                "sepal_width": item["sepalwidth"],
+
+                "petal_length": item["petallength"],
+
+                "petal_width": item["petalwidth"],
+
+                "model_name": item["modelname"],
+
+                "prediction": item["prediction"],
+
+                "processing_time": item["processingtime"],
+
+                "created_at": item["createdat"].strftime(
+                    "%d/%m/%Y %H:%M:%S"
+                )
+            })
+
+        return {
+
+            "success": True,
+
+            "user_id": user_id,
+
+            "history": history_data
+
+        }
+
+    except Exception as e:
+
+        if conn:
+            conn.close()
+
+        print("Lỗi lấy lịch sử:", e)
+
+        return {
+
+            "success": False,
+
+            "user_id": user_id,
+
+            "history": []
+
+        }
+
+
+# =========================================================
+# TẢI MODEL
+# =========================================================
+
+model = joblib.load(
+    os.path.join(
+        BASE_DIR,
+        "svm_model.pkl"
     )
+)
 
-    # Chỉ lấy lịch sử của user hiện tại
-    user_history = [
-
-        item
-
-        for item in history_data
-
-        if item["user_id"] == user_id
-
-    ]
-
-    # Mới nhất lên trước
-    user_history.reverse()
-
-    return {
-
-        "success": True,
-
-        "user_id": user_id,
-
-        "history": user_history
-
-    }
-
+scaler = joblib.load(
+    os.path.join(
+        BASE_DIR,
+        "scaler.pkl"
+    )
+)
