@@ -4,18 +4,29 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime, timezone, timedelta
+
 import joblib
 import time
 import json
 import os
 
 
-# Tên file lưu dữ liệu
-USERS_FILE = "users.json"
-HISTORY_FILE = "history.json"
+# =========================================================
+# ĐƯỜNG DẪN FILE
+# =========================================================
+
+# Lấy thư mục chứa file api.py
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# File lưu dữ liệu
+USERS_FILE = os.path.join(BASE_DIR, "users.json")
+HISTORY_FILE = os.path.join(BASE_DIR, "history.json")
 
 
-# Tạo file nếu chưa có
+# =========================================================
+# TẠO FILE JSON NẾU CHƯA CÓ
+# =========================================================
+
 if not os.path.exists(USERS_FILE):
     with open(USERS_FILE, "w", encoding="utf-8") as f:
         json.dump([], f, ensure_ascii=False, indent=4)
@@ -25,31 +36,72 @@ if not os.path.exists(HISTORY_FILE):
         json.dump([], f, ensure_ascii=False, indent=4)
 
 
-# Đọc dữ liệu
+# =========================================================
+# ĐỌC JSON
+# =========================================================
+
 def load_json(filename):
-    with open(filename, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(filename, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
 
 
-# Lưu dữ liệu
+# =========================================================
+# LƯU JSON
+# =========================================================
+
 def save_json(filename, data):
     with open(filename, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+        json.dump(
+            data,
+            f,
+            ensure_ascii=False,
+            indent=4
+        )
 
 
-# Tải model
-model = joblib.load("svm_model.pkl")
-scaler = joblib.load("scaler.pkl")
+# =========================================================
+# TẢI MODEL
+# =========================================================
+
+model = joblib.load(
+    os.path.join(BASE_DIR, "svm_model.pkl")
+)
+
+scaler = joblib.load(
+    os.path.join(BASE_DIR, "scaler.pkl")
+)
 
 
-# Khởi tạo API
+# =========================================================
+# KHỞI TẠO FASTAPI
+# =========================================================
+
 app = FastAPI(
     title="Iris Classification API",
     description="SVM model for the Iris dataset",
     version="1.0.0"
 )
 
-app.mount("/images", StaticFiles(directory="images"), name="images")
+
+# =========================================================
+# HÌNH ẢNH
+# =========================================================
+
+app.mount(
+    "/images",
+    StaticFiles(
+        directory=os.path.join(BASE_DIR, "images")
+    ),
+    name="images"
+)
+
+
+# =========================================================
+# CORS
+# =========================================================
 
 app.add_middleware(
     CORSMiddleware,
@@ -60,7 +112,10 @@ app.add_middleware(
 )
 
 
-# Dữ liệu
+# =========================================================
+# MODEL INPUT
+# =========================================================
+
 class RegisterInput(BaseModel):
     username: str
     password: str
@@ -85,6 +140,10 @@ class PredictInput(BaseModel):
     petal_width: float
 
 
+# =========================================================
+# LOÀI HOA IRIS
+# =========================================================
+
 species = {
     0: "Setosa",
     1: "Versicolor",
@@ -92,61 +151,98 @@ species = {
 }
 
 
-# Trang chủ
+# =========================================================
+# TRANG CHỦ
+# =========================================================
+
 @app.get("/")
 def home():
-    return FileResponse("api.html")
+    return FileResponse(
+        os.path.join(BASE_DIR, "api.html")
+    )
 
+
+# =========================================================
+# HEALTH CHECK
+# =========================================================
 
 @app.get("/health")
 def health():
-    return {"status": "healthy"}
+    return {
+        "status": "healthy"
+    }
 
 
-# Đăng ký
+# =========================================================
+# ĐĂNG KÝ
+# =========================================================
+
 @app.post("/register")
 def register(data: RegisterInput):
+
     users = load_json(USERS_FILE)
 
     # Kiểm tra tên đăng nhập
     for user in users:
+
         if user["username"] == data.username:
+
             return {
                 "success": False,
                 "message": "Tên đăng nhập đã tồn tại!"
             }
 
-    # Tạo UserID mới
+    # Tạo User ID mới
     if users:
-        new_user_id = max(user["user_id"] for user in users) + 1
+
+        new_user_id = max(
+            user["user_id"]
+            for user in users
+        ) + 1
+
     else:
+
         new_user_id = 1
 
-    # Thêm tài khoản
-    users.append({
+    # Tạo tài khoản mới
+    new_user = {
         "user_id": new_user_id,
         "username": data.username,
         "password": data.password
-    })
+    }
 
-    save_json(USERS_FILE, users)
+    users.append(new_user)
+
+    # Lưu vào users.json
+    save_json(
+        USERS_FILE,
+        users
+    )
 
     return {
         "success": True,
-        "message": "Đăng ký thành công!"
+        "message": "Đăng ký thành công!",
+        "user_id": new_user_id
     }
 
 
-# Đăng nhập
+# =========================================================
+# ĐĂNG NHẬP
+# =========================================================
+
 @app.post("/login")
 def login(data: LoginInput):
+
     users = load_json(USERS_FILE)
 
     for user in users:
+
         if (
             user["username"] == data.username
-            and user["password"] == data.password
+            and
+            user["password"] == data.password
         ):
+
             return {
                 "success": True,
                 "message": "Đăng nhập thành công!",
@@ -160,21 +256,35 @@ def login(data: LoginInput):
     }
 
 
-# Đổi mật khẩu
+# =========================================================
+# ĐỔI MẬT KHẨU
+# =========================================================
+
 @app.post("/change-password")
 def change_password(data: ChangePasswordInput):
+
     users = load_json(USERS_FILE)
 
     for user in users:
+
         if user["user_id"] == data.user_id:
+
+            # Kiểm tra mật khẩu cũ
             if user["password"] != data.old_password:
+
                 return {
                     "success": False,
                     "message": "Mật khẩu cũ không đúng!"
                 }
 
+            # Cập nhật mật khẩu
             user["password"] = data.new_password
-            save_json(USERS_FILE, users)
+
+            # Lưu lại users.json
+            save_json(
+                USERS_FILE,
+                users
+            )
 
             return {
                 "success": True,
@@ -187,11 +297,16 @@ def change_password(data: ChangePasswordInput):
     }
 
 
-# Dự đoán + lưu lịch sử
+# =========================================================
+# DỰ ĐOÁN + LƯU LỊCH SỬ
+# =========================================================
+
 @app.post("/predict")
 def predict(data: PredictInput):
+
     start_time = time.time()
 
+    # Dữ liệu đầu vào
     features = [[
         data.sepal_length,
         data.sepal_width,
@@ -199,70 +314,130 @@ def predict(data: PredictInput):
         data.petal_width
     ]]
 
+    # Chuẩn hóa dữ liệu
+    scaled_features = scaler.transform(features)
+
+    # Dự đoán
     prediction = int(
-        model.predict(scaler.transform(features))[0]
+        model.predict(scaled_features)[0]
     )
 
+    # Tên loài
     prediction_name = species[prediction]
+
+    # Thời gian xử lý
     processing_time = time.time() - start_time
 
+    # Thời gian Việt Nam
     vietnam_time = (
-        datetime.now(timezone.utc) + timedelta(hours=7)
+        datetime.now(timezone.utc)
+        + timedelta(hours=7)
     ).replace(tzinfo=None)
 
-    # Đọc lịch sử hiện tại
+    # =====================================================
+    # ĐỌC HISTORY.JSON
+    # =====================================================
+
     history_data = load_json(HISTORY_FILE)
 
-    # Tạo ID cho lần dự đoán
+    # =====================================================
+    # TẠO ID DỰ ĐOÁN
+    # =====================================================
+
     if history_data:
+
         new_prediction_id = max(
             item["prediction_id"]
             for item in history_data
         ) + 1
+
     else:
+
         new_prediction_id = 1
 
-    # Thêm lịch sử
-    history_data.append({
+    # =====================================================
+    # THÊM LỊCH SỬ
+    # =====================================================
+
+    new_history = {
+
         "prediction_id": new_prediction_id,
+
         "user_id": data.user_id,
+
         "sepal_length": data.sepal_length,
+
         "sepal_width": data.sepal_width,
+
         "petal_length": data.petal_length,
+
         "petal_width": data.petal_width,
+
         "model_name": "SVM",
+
         "prediction": prediction_name,
-        "processing_time": round(processing_time, 4),
+
+        "processing_time": round(
+            processing_time,
+            4
+        ),
+
         "created_at": vietnam_time.strftime(
             "%d/%m/%Y %H:%M:%S"
         )
-    })
+    }
 
-    # Lưu lại
-    save_json(HISTORY_FILE, history_data)
+    history_data.append(
+        new_history
+    )
+
+    # =====================================================
+    # LƯU HISTORY.JSON
+    # =====================================================
+
+    save_json(
+        HISTORY_FILE,
+        history_data
+    )
 
     return {
+        "success": True,
         "prediction": prediction_name
     }
 
 
-# Lịch sử
+# =========================================================
+# LỊCH SỬ DỰ ĐOÁN
+# =========================================================
+
 @app.get("/history/{user_id}")
 def history(user_id: int):
-    history_data = load_json(HISTORY_FILE)
 
-    # Chỉ lấy lịch sử của tài khoản đang đăng nhập
+    history_data = load_json(
+        HISTORY_FILE
+    )
+
+    # Chỉ lấy lịch sử của user hiện tại
     user_history = [
+
         item
+
         for item in history_data
+
         if item["user_id"] == user_id
+
     ]
 
     # Mới nhất lên trước
     user_history.reverse()
 
     return {
+
         "success": True,
+
         "user_id": user_id,
+
         "history": user_history
+
     }
+
