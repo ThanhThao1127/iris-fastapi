@@ -12,8 +12,10 @@ import os
 
 # 1. CẤU HÌNH FILE JSON
 
-USERS_FILE = "users.json"
-HISTORY_FILE = "history.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+USERS_FILE = os.path.join(BASE_DIR, "users.json")
+HISTORY_FILE = os.path.join(BASE_DIR, "history.json")
 
 # Tạo file nếu chưa có
 if not os.path.exists(USERS_FILE):
@@ -272,7 +274,10 @@ def predict(data: PredictInput):
 
     # Trả kết quả về web
     return {
-        "prediction": prediction_name
+        "success": True,
+        "prediction": prediction_name,
+        "prediction_id": new_prediction_id,
+        "user_id": data.user_id
     }
 
 
@@ -298,4 +303,3 @@ def history(user_id: int):
         "user_id": user_id,
         "history": user_history
     }
-
