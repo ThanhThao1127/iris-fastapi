@@ -10,12 +10,10 @@ import json
 import os
 
 
-# 1. CẤU HÌNH FILE JSON
+# Tên file lưu dữ liệu
+USERS_FILE = "users.json"
+HISTORY_FILE = "history.json"
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-USERS_FILE = os.path.join(BASE_DIR, "users.json")
-HISTORY_FILE = os.path.join(BASE_DIR, "history.json")
 
 # Tạo file nếu chưa có
 if not os.path.exists(USERS_FILE):
@@ -27,26 +25,24 @@ if not os.path.exists(HISTORY_FILE):
         json.dump([], f, ensure_ascii=False, indent=4)
 
 
-# 2. ĐỌC / LƯU JSON
-
+# Đọc dữ liệu
 def load_json(filename):
     with open(filename, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
+# Lưu dữ liệu
 def save_json(filename, data):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-# 3. TẢI MODEL
-
+# Tải model
 model = joblib.load("svm_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
 
-# 4. KHỞI TẠO API
-
+# Khởi tạo API
 app = FastAPI(
     title="Iris Classification API",
     description="SVM model for the Iris dataset",
@@ -54,7 +50,6 @@ app = FastAPI(
 )
 
 app.mount("/images", StaticFiles(directory="images"), name="images")
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -65,8 +60,7 @@ app.add_middleware(
 )
 
 
-# 5. DỮ LIỆU INPUT
-
+# Dữ liệu
 class RegisterInput(BaseModel):
     username: str
     password: str
@@ -98,8 +92,7 @@ species = {
 }
 
 
-# 6. TRANG CHỦ
-
+# Trang chủ
 @app.get("/")
 def home():
     return FileResponse("api.html")
@@ -110,11 +103,9 @@ def health():
     return {"status": "healthy"}
 
 
-# 7. ĐĂNG KÝ
-
+# Đăng ký
 @app.post("/register")
 def register(data: RegisterInput):
-
     users = load_json(USERS_FILE)
 
     # Kiểm tra tên đăng nhập
@@ -127,14 +118,11 @@ def register(data: RegisterInput):
 
     # Tạo UserID mới
     if users:
-        new_user_id = max(
-            user["user_id"]
-            for user in users
-        ) + 1
+        new_user_id = max(user["user_id"] for user in users) + 1
     else:
         new_user_id = 1
 
-    # Lưu tài khoản vào JSON
+    # Thêm tài khoản
     users.append({
         "user_id": new_user_id,
         "username": data.username,
@@ -145,16 +133,13 @@ def register(data: RegisterInput):
 
     return {
         "success": True,
-        "message": "Đăng ký thành công!",
-        "user_id": new_user_id
+        "message": "Đăng ký thành công!"
     }
 
 
-# 8. ĐĂNG NHẬP
-
+# Đăng nhập
 @app.post("/login")
 def login(data: LoginInput):
-
     users = load_json(USERS_FILE)
 
     for user in users:
@@ -175,27 +160,20 @@ def login(data: LoginInput):
     }
 
 
-# 9. ĐỔI MẬT KHẨU
-
+# Đổi mật khẩu
 @app.post("/change-password")
 def change_password(data: ChangePasswordInput):
-
     users = load_json(USERS_FILE)
 
     for user in users:
-
         if user["user_id"] == data.user_id:
-
-            # Kiểm tra mật khẩu cũ
             if user["password"] != data.old_password:
                 return {
                     "success": False,
                     "message": "Mật khẩu cũ không đúng!"
                 }
 
-            # Cập nhật mật khẩu trong JSON
             user["password"] = data.new_password
-
             save_json(USERS_FILE, users)
 
             return {
@@ -209,12 +187,9 @@ def change_password(data: ChangePasswordInput):
     }
 
 
-# 10. DỰ ĐOÁN + LƯU JSON
-
+# Dự đoán + lưu lịch sử
 @app.post("/predict")
 def predict(data: PredictInput):
-
-    # Bắt đầu tính thời gian
     start_time = time.time()
 
     features = [[
@@ -224,26 +199,18 @@ def predict(data: PredictInput):
         data.petal_width
     ]]
 
-    # Chuẩn hóa dữ liệu
-    scaled_features = scaler.transform(features)
-
-    # Dự đoán
     prediction = int(
-        model.predict(scaled_features)[0]
+        model.predict(scaler.transform(features))[0]
     )
 
     prediction_name = species[prediction]
-
-    # Thời gian xử lý
     processing_time = time.time() - start_time
 
-    # Thời gian Việt Nam UTC+7
     vietnam_time = (
-        datetime.now(timezone.utc)
-        + timedelta(hours=7)
+        datetime.now(timezone.utc) + timedelta(hours=7)
     ).replace(tzinfo=None)
 
-    # Lưu vào JSON
+    # Đọc lịch sử hiện tại
     history_data = load_json(HISTORY_FILE)
 
     # Tạo ID cho lần dự đoán
@@ -255,6 +222,7 @@ def predict(data: PredictInput):
     else:
         new_prediction_id = 1
 
+    # Thêm lịch sử
     history_data.append({
         "prediction_id": new_prediction_id,
         "user_id": data.user_id,
@@ -270,22 +238,17 @@ def predict(data: PredictInput):
         )
     })
 
+    # Lưu lại
     save_json(HISTORY_FILE, history_data)
 
-    # Trả kết quả về web
     return {
-        "success": True,
-        "prediction": prediction_name,
-        "prediction_id": new_prediction_id,
-        "user_id": data.user_id
+        "prediction": prediction_name
     }
 
 
-# 11. LỊCH SỬ
-
+# Lịch sử
 @app.get("/history/{user_id}")
 def history(user_id: int):
-
     history_data = load_json(HISTORY_FILE)
 
     # Chỉ lấy lịch sử của tài khoản đang đăng nhập
