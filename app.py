@@ -8,7 +8,6 @@ import joblib
 import time
 import json
 import os
-import pyodbc
 
 
 # 1. CẤU HÌNH FILE JSON
@@ -38,31 +37,13 @@ def save_json(filename, data):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
-# 3. KẾT NỐI SQL SERVER
-
-SERVER = r"DESKTOP-9RB4JUU"
-DATABASE = "IrisDB"
-DRIVER = "ODBC Driver 17 for SQL Server"
-
-
-def get_connection():
-    connection_string = (
-        f"DRIVER={{{DRIVER}}};"
-        f"SERVER={SERVER};"
-        f"DATABASE={DATABASE};"
-        f"Trusted_Connection=yes;"
-    )
-
-    return pyodbc.connect(connection_string)
-
-
-# 4. TẢI MODEL
+# 3. TẢI MODEL
 
 model = joblib.load("svm_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
 
-# 5. KHỞI TẠO API
+# 4. KHỞI TẠO API
 
 app = FastAPI(
     title="Iris Classification API",
@@ -82,7 +63,7 @@ app.add_middleware(
 )
 
 
-# 6. DỮ LIỆU INPUT
+# 5. DỮ LIỆU INPUT
 
 class RegisterInput(BaseModel):
     username: str
@@ -115,7 +96,7 @@ species = {
 }
 
 
-# 7. TRANG CHỦ
+# 6. TRANG CHỦ
 
 @app.get("/")
 def home():
@@ -127,14 +108,14 @@ def health():
     return {"status": "healthy"}
 
 
-# 8. ĐĂNG KÝ
+# 7. ĐĂNG KÝ
 
 @app.post("/register")
 def register(data: RegisterInput):
 
     users = load_json(USERS_FILE)
 
-    # Kiểm tra tên đăng nhập trong JSON
+    # Kiểm tra tên đăng nhập
     for user in users:
         if user["username"] == data.username:
             return {
@@ -142,46 +123,14 @@ def register(data: RegisterInput):
                 "message": "Tên đăng nhập đã tồn tại!"
             }
 
-    # Thêm tài khoản vào SQL
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        # Kiểm tra username trong SQL
-        cursor.execute(
-            "SELECT UserID FROM Users WHERE Username = ?",
-            data.username
-        )
-
-        if cursor.fetchone():
-            conn.close()
-
-            return {
-                "success": False,
-                "message": "Tên đăng nhập đã tồn tại trong SQL!"
-            }
-
-        # Thêm user và lấy UserID
-        cursor.execute(
-            """
-            INSERT INTO Users (Username, Password)
-            OUTPUT INSERTED.UserID
-            VALUES (?, ?)
-            """,
-            data.username,
-            data.password
-        )
-
-        new_user_id = cursor.fetchone()[0]
-
-        conn.commit()
-        conn.close()
-
-    except Exception as e:
-        return {
-            "success": False,
-            "message": f"Lỗi kết nối SQL: {str(e)}"
-        }
+    # Tạo UserID mới
+    if users:
+        new_user_id = max(
+            user["user_id"]
+            for user in users
+        ) + 1
+    else:
+        new_user_id = 1
 
     # Lưu tài khoản vào JSON
     users.append({
@@ -199,7 +148,7 @@ def register(data: RegisterInput):
     }
 
 
-# 9. ĐĂNG NHẬP
+# 8. ĐĂNG NHẬP
 
 @app.post("/login")
 def login(data: LoginInput):
@@ -224,7 +173,7 @@ def login(data: LoginInput):
     }
 
 
-# 10. ĐỔI MẬT KHẨU
+# 9. ĐỔI MẬT KHẨU
 
 @app.post("/change-password")
 def change_password(data: ChangePasswordInput):
@@ -242,31 +191,7 @@ def change_password(data: ChangePasswordInput):
                     "message": "Mật khẩu cũ không đúng!"
                 }
 
-            # Cập nhật SQL
-            try:
-                conn = get_connection()
-                cursor = conn.cursor()
-
-                cursor.execute(
-                    """
-                    UPDATE Users
-                    SET Password = ?
-                    WHERE UserID = ?
-                    """,
-                    data.new_password,
-                    data.user_id
-                )
-
-                conn.commit()
-                conn.close()
-
-            except Exception as e:
-                return {
-                    "success": False,
-                    "message": f"Lỗi SQL: {str(e)}"
-                }
-
-            # Cập nhật JSON
+            # Cập nhật mật khẩu trong JSON
             user["password"] = data.new_password
 
             save_json(USERS_FILE, users)
@@ -282,7 +207,7 @@ def change_password(data: ChangePasswordInput):
     }
 
 
-# 11. DỰ ĐOÁN + LƯU JSON + LƯU SQL
+# 10. DỰ ĐOÁN + LƯU JSON
 
 @app.post("/predict")
 def predict(data: PredictInput):
@@ -316,8 +241,7 @@ def predict(data: PredictInput):
         + timedelta(hours=7)
     ).replace(tzinfo=None)
 
-    # 12. LƯU VÀO JSON
-
+    # Lưu vào JSON
     history_data = load_json(HISTORY_FILE)
 
     # Tạo ID cho lần dự đoán
@@ -346,52 +270,13 @@ def predict(data: PredictInput):
 
     save_json(HISTORY_FILE, history_data)
 
-    # 13. LƯU CÙNG DỮ LIỆU VÀO SQL
-
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            """
-            INSERT INTO Predictions (
-                UserID,
-                SepalLength,
-                SepalWidth,
-                PetalLength,
-                PetalWidth,
-                ModelName,
-                Prediction,
-                ProcessingTime,
-                CreatedAt
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            data.user_id,
-            data.sepal_length,
-            data.sepal_width,
-            data.petal_length,
-            data.petal_width,
-            "SVM",
-            prediction_name,
-            round(processing_time, 4),
-            vietnam_time
-        )
-
-        conn.commit()
-        conn.close()
-
-    except Exception as e:
-        print("Lỗi lưu SQL:", e)
-
-    # 14. TRẢ KẾT QUẢ VỀ WEB
-
+    # Trả kết quả về web
     return {
         "prediction": prediction_name
     }
 
 
-# 15. LỊCH SỬ
+# 11. LỊCH SỬ
 
 @app.get("/history/{user_id}")
 def history(user_id: int):
@@ -413,3 +298,4 @@ def history(user_id: int):
         "user_id": user_id,
         "history": user_history
     }
+
