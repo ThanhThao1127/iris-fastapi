@@ -2847,8 +2847,6 @@ function logoutUser(){
 
 /* ================= PREDICT ================= */
 
-/* ================= PREDICT ================= */
-
 async function predict(){
 
     const userId =
@@ -2886,55 +2884,41 @@ async function predict(){
 
     try{
 
-        const requestData = {
-
-            user_id: Number(userId),
-
-            sepal_length: Number(values[0]),
-            sepal_width: Number(values[1]),
-            petal_length: Number(values[2]),
-            petal_width: Number(values[3])
-
-        };
-
-        console.log("Dữ liệu gửi lên API:", requestData);
-
         const response =
             await fetch("/predict",{
-
                 method:"POST",
-
                 headers:{
                     "Content-Type":"application/json"
                 },
+                body:JSON.stringify({
 
-                body:JSON.stringify(requestData)
+                    user_id:Number(userId),
 
+                    sepal_length:Number(values[0]),
+                    sepal_width:Number(values[1]),
+                    petal_length:Number(values[2]),
+                    petal_width:Number(values[3])
+
+                })
             });
 
         if(!response.ok){
-
             throw new Error(
                 "API không phản hồi thành công"
             );
-
         }
 
         const data =
             await response.json();
-
-        console.log("Kết quả API:", data);
 
         const flowerName =
             String(data.prediction).toLowerCase();
 
         const flower =
             flowerData[flowerName];
-
         $("result").style.display = "block";
+$("prediction").textContent = data.prediction;
 
-        $("prediction").textContent =
-            data.prediction;
 
         if(flower){
 
@@ -2951,18 +2935,11 @@ async function predict(){
         $("new-prediction-button")
             .style.display = "block";
 
-        // Tải lại lịch sử sau khi dự đoán
-        await loadHistory();
-
     }catch(error){
 
-        console.error(
-            "Lỗi dự đoán:",
-            error
-        );
+        console.error(error);
 
         $("result").style.display = "block";
-
         $("prediction").textContent =
             "Có lỗi xảy ra!";
 
@@ -2982,7 +2959,6 @@ async function predict(){
     }finally{
 
         button.disabled = false;
-
         button.textContent =
             "🔍 Dự đoán loài hoa";
     }

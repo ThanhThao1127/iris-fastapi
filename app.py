@@ -8,22 +8,15 @@ from datetime import datetime, timezone, timedelta
 import joblib
 import time
 import os
-import hashlib
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
 
-# =========================================================
 # ĐƯỜNG DẪN FILE
-# =========================================================
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-# =========================================================
 # DATABASE
-# =========================================================
-
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
@@ -37,21 +30,14 @@ def get_connection():
     )
 
 
-# =========================================================
 # TẠO DATABASE TABLE
-# =========================================================
-
 def create_tables():
 
     try:
-
         conn = get_connection()
         cursor = conn.cursor()
 
-        # -----------------------------
-        # BẢNG USERS
-        # -----------------------------
-
+        # Bảng Users
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS Users (
                 UserID SERIAL PRIMARY KEY,
@@ -60,10 +46,7 @@ def create_tables():
             )
         """)
 
-        # -----------------------------
-        # BẢNG PREDICTIONS
-        # -----------------------------
-
+        # Bảng Predictions
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS Predictions (
                 PredictionID SERIAL PRIMARY KEY,
@@ -98,14 +81,10 @@ def create_tables():
         print("Đã kiểm tra / tạo bảng Users và Predictions.")
 
     except Exception as e:
-
         print("Không thể kết nối PostgreSQL:", e)
 
 
-# =========================================================
 # KHỞI TẠO FASTAPI
-# =========================================================
-
 app = FastAPI(
     title="Iris Classification API",
     description="SVM model for the Iris dataset",
@@ -113,20 +92,13 @@ app = FastAPI(
 )
 
 
-# =========================================================
 # TẠO DATABASE KHI SERVER KHỞI ĐỘNG
-# =========================================================
-
 @app.on_event("startup")
 def startup_event():
-
     create_tables()
 
 
-# =========================================================
 # HÌNH ẢNH
-# =========================================================
-
 app.mount(
     "/images",
     StaticFiles(
@@ -136,10 +108,7 @@ app.mount(
 )
 
 
-# =========================================================
 # CORS
-# =========================================================
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -149,10 +118,7 @@ app.add_middleware(
 )
 
 
-# =========================================================
 # MODEL INPUT
-# =========================================================
-
 class RegisterInput(BaseModel):
     username: str
     password: str
@@ -177,10 +143,7 @@ class PredictInput(BaseModel):
     petal_width: float
 
 
-# =========================================================
 # LOÀI HOA IRIS
-# =========================================================
-
 species = {
     0: "Setosa",
     1: "Versicolor",
@@ -188,56 +151,33 @@ species = {
 }
 
 
-# =========================================================
-# MÃ HÓA MẬT KHẨU
-# =========================================================
-
-def hash_password(password):
-
-    return hashlib.sha256(
-        password.encode("utf-8")
-    ).hexdigest()
-
-
-# =========================================================
 # TRANG CHỦ
-# =========================================================
-
 @app.get("/")
 def home():
-
     return FileResponse(
         os.path.join(BASE_DIR, "api.html")
     )
 
 
-# =========================================================
 # HEALTH CHECK
-# =========================================================
-
 @app.get("/health")
 def health():
-
     return {
         "status": "healthy"
     }
 
 
-# =========================================================
 # ĐĂNG KÝ
-# =========================================================
-
 @app.post("/register")
 def register(data: RegisterInput):
 
     conn = None
 
     try:
-
         conn = get_connection()
         cursor = conn.cursor()
 
-        # Kiểm tra username đã tồn tại
+        # Kiểm tra username
         cursor.execute(
             """
             SELECT UserID
@@ -250,7 +190,6 @@ def register(data: RegisterInput):
         existing_user = cursor.fetchone()
 
         if existing_user:
-
             cursor.close()
             conn.close()
 
@@ -259,12 +198,9 @@ def register(data: RegisterInput):
                 "message": "Tên đăng nhập đã tồn tại!"
             }
 
-        # Mã hóa mật khẩu
-        password_hash = hash_password(
-            data.password
-        )
+        # Lưu mật khẩu trực tiếp
+        password = data.password
 
-        # Thêm user
         cursor.execute(
             """
             INSERT INTO Users
@@ -274,7 +210,7 @@ def register(data: RegisterInput):
             """,
             (
                 data.username,
-                password_hash
+                password
             )
         )
 
@@ -305,26 +241,19 @@ def register(data: RegisterInput):
         }
 
 
-# =========================================================
 # ĐĂNG NHẬP
-# =========================================================
-
 @app.post("/login")
 def login(data: LoginInput):
 
     conn = None
 
     try:
-
         conn = get_connection()
         cursor = conn.cursor(
             cursor_factory=RealDictCursor
         )
 
-        password_hash = hash_password(
-            data.password
-        )
-
+        # Kiểm tra trực tiếp
         cursor.execute(
             """
             SELECT UserID, Username
@@ -334,7 +263,7 @@ def login(data: LoginInput):
             """,
             (
                 data.username,
-                password_hash
+                data.password
             )
         )
 
@@ -344,7 +273,6 @@ def login(data: LoginInput):
         conn.close()
 
         if user:
-
             return {
                 "success": True,
                 "message": "Đăng nhập thành công!",
@@ -370,26 +298,17 @@ def login(data: LoginInput):
         }
 
 
-# =========================================================
 # ĐỔI MẬT KHẨU
-# =========================================================
-
 @app.post("/change-password")
 def change_password(data: ChangePasswordInput):
 
     conn = None
 
     try:
-
         conn = get_connection()
         cursor = conn.cursor()
 
-        # Mã hóa mật khẩu cũ
-        old_password_hash = hash_password(
-            data.old_password
-        )
-
-        # Kiểm tra tài khoản
+        # Kiểm tra mật khẩu cũ
         cursor.execute(
             """
             SELECT UserID
@@ -399,14 +318,13 @@ def change_password(data: ChangePasswordInput):
             """,
             (
                 data.user_id,
-                old_password_hash
+                data.old_password
             )
         )
 
         user = cursor.fetchone()
 
         if not user:
-
             cursor.close()
             conn.close()
 
@@ -415,12 +333,9 @@ def change_password(data: ChangePasswordInput):
                 "message": "Mật khẩu cũ không đúng!"
             }
 
-        # Mã hóa mật khẩu mới
-        new_password_hash = hash_password(
-            data.new_password
-        )
+        # Lưu mật khẩu mới
+        new_password = data.new_password
 
-        # Cập nhật
         cursor.execute(
             """
             UPDATE Users
@@ -428,7 +343,7 @@ def change_password(data: ChangePasswordInput):
             WHERE UserID = %s
             """,
             (
-                new_password_hash,
+                new_password,
                 data.user_id
             )
         )
@@ -457,23 +372,16 @@ def change_password(data: ChangePasswordInput):
         }
 
 
-# =========================================================
 # DỰ ĐOÁN + LƯU LỊCH SỬ
-# =========================================================
-
 @app.post("/predict")
 def predict(data: PredictInput):
 
     start_time = time.time()
 
-    # =====================================================
-    # KIỂM TRA USER
-    # =====================================================
-
+    # Kiểm tra user
     conn = None
 
     try:
-
         conn = get_connection()
         cursor = conn.cursor()
 
@@ -489,7 +397,6 @@ def predict(data: PredictInput):
         user = cursor.fetchone()
 
         if not user:
-
             cursor.close()
             conn.close()
 
@@ -498,10 +405,7 @@ def predict(data: PredictInput):
                 "message": "Không tìm thấy tài khoản!"
             }
 
-        # =================================================
-        # DỮ LIỆU ĐẦU VÀO
-        # =================================================
-
+        # Dữ liệu đầu vào
         features = [[
             data.sepal_length,
             data.sepal_width,
@@ -509,18 +413,12 @@ def predict(data: PredictInput):
             data.petal_width
         ]]
 
-        # =================================================
-        # CHUẨN HÓA
-        # =================================================
-
+        # Chuẩn hóa
         scaled_features = scaler.transform(
             features
         )
 
-        # =================================================
-        # DỰ ĐOÁN
-        # =================================================
-
+        # Dự đoán
         prediction = int(
             model.predict(
                 scaled_features
@@ -531,27 +429,18 @@ def predict(data: PredictInput):
             prediction
         ]
 
-        # =================================================
-        # THỜI GIAN XỬ LÝ
-        # =================================================
-
+        # Thời gian xử lý
         processing_time = (
             time.time() - start_time
         )
 
-        # =================================================
-        # THỜI GIAN VIỆT NAM
-        # =================================================
-
+        # Thời gian Việt Nam
         vietnam_time = (
             datetime.now(timezone.utc)
             + timedelta(hours=7)
         ).replace(tzinfo=None)
 
-        # =================================================
-        # LƯU VÀO DATABASE
-        # =================================================
-
+        # Lưu vào database
         cursor.execute(
             """
             INSERT INTO Predictions
@@ -598,7 +487,6 @@ def predict(data: PredictInput):
     except Exception as e:
 
         if conn:
-
             conn.rollback()
             conn.close()
 
@@ -610,17 +498,13 @@ def predict(data: PredictInput):
         }
 
 
-# =========================================================
 # LỊCH SỬ DỰ ĐOÁN
-# =========================================================
-
 @app.get("/history/{user_id}")
 def history(user_id: int):
 
     conn = None
 
     try:
-
         conn = get_connection()
 
         cursor = conn.cursor(
@@ -709,10 +593,7 @@ def history(user_id: int):
         }
 
 
-# =========================================================
 # TẢI MODEL
-# =========================================================
-
 model = joblib.load(
     os.path.join(
         BASE_DIR,
@@ -726,3 +607,4 @@ scaler = joblib.load(
         "scaler.pkl"
     )
 )
+
